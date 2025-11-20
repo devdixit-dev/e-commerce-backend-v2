@@ -1,17 +1,37 @@
 import 'dotenv/config'
 
-import app from "./app";
 import connectDatabase from "./config/database.config";
-import RedisClient from "./config/redis.config";
+import cluster from 'cluster';
+import os from 'os';
+import createServer from './app';
 
 const port = process.env.PORT || 3030;
 
-const start = async () => {
-  app.listen(port, () => {
-    console.log(`Server is running at http://localhost:${port}`);
-  });
+const startServer = async () => {
+  if (cluster.isPrimary) {
+    const cpus = os.cpus().length;
+    console.log(`Master: ${process.pid}`);
+    console.log(`Starting ${cpus} workers...`)
 
-  await connectDatabase();
+    for (let i = 0; i < cpus; i++) {
+      cluster.fork();
+    }
+
+    cluster.on('exit', (worker, code, signal) => {
+      console.error(
+        `Worker ${worker.process.pid} died (code: ${code}, signal: ${signal}). Restarting...`
+      );
+      cluster.fork();
+    });
+  } else {
+    const app = await createServer();
+
+    app.listen(port, () => {
+      console.log(`Worker ${process.pid} started and listening on port ${port}`);
+    });
+
+    await connectDatabase();
+  }
 }
 
-start();
+startServer();
