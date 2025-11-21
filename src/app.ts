@@ -30,12 +30,12 @@ const createServer = async () => {
 
     setTimeout(async () => {
       await SendEmail(to, subject, text);
-
-      return res.json({
-        success: true,
-        message: 'Email sent & logged'
-      });
     }, 3000);
+
+    return res.json({
+      success: true,
+      message: 'Email sent & logged'
+    });
   });
 
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {
