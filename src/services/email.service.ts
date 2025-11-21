@@ -28,23 +28,23 @@ const SendEmail = async (to: string, subject: string, text: string) => {
     const key = `email:log:${to}:${Date.now()}`
     await RedisClient.set(key, subject, "EX", 60);
 
-    const logsDir = path.join(process.cwd(), "logs");
+    setTimeout(() => {
+      const logsDir = path.join(process.cwd(), "logs");
 
-    if(!fs.existsSync(logsDir)) {
-      fs.mkdirSync(logsDir, { recursive: true });
-    }
+      if (!fs.existsSync(logsDir)) {
+        fs.mkdirSync(logsDir, { recursive: true });
+      }
 
-    const logFile = path.join(logsDir, "email.log");
+      const logFile = path.join(logsDir, "email.log");
 
-    const logEntry = `\n[${new Date().toISOString()}] Email sent -> ${to} | Subject: ${subject}\n`;
+      const logEntry = `\n[${new Date().toISOString()}] Email sent -> ${to} | Subject: ${subject}`;
 
-    fs.appendFileSync(logFile, logEntry, 'utf-8');
+      fs.appendFileSync(logFile, logEntry, 'utf-8');
 
-    console.log(`Email sent and logged successfully`);
-
-    return true;
+      console.log(`Email sent and logged successfully`);
+    }, 3000);
   }
-  catch(err) {
+  catch (err) {
     console.error(`Send email error: ${err}`);
     return null
   }

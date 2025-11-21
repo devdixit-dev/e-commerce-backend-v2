@@ -25,15 +25,17 @@ const createServer = async () => {
   app.use('/api/v1/auth', authRouter);
   app.use('/api/v1/user', UserRouter);
 
-  app.post('/check', async (req, res) => {
+  app.post('/check', (req, res) => {
     const { to, subject, text } = req.body;
 
-    await SendEmail(to, subject, text);
+    setTimeout(async () => {
+      await SendEmail(to, subject, text);
 
-    return res.json({
-      success: true,
-      message: 'Email sent & logged'
-    });
+      return res.json({
+        success: true,
+        message: 'Email sent & logged'
+      });
+    }, 3000);
   });
 
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {
