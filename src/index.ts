@@ -1,9 +1,10 @@
 import 'dotenv/config'
-
-import connectDatabase from "./config/database.config";
 import cluster from 'cluster';
 import os from 'os';
+
 import createServer from './app';
+import connectDatabase from "./config/database.config";
+
 
 const port = process.env.PORT || 3030;
 

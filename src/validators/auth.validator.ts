@@ -1,7 +1,7 @@
 import Joi from "joi";
 
 export const registerOrLoginSchema = Joi.object({
-  mobileNumber: Joi.number().min(10).required().messages({
+  email: Joi.number().min(10).required().messages({
     "number.empty": 'Mobile number is required',
     "number.min": 'Mobile number should have at least 10 numbers'
   })
