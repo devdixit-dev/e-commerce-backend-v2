@@ -2,8 +2,7 @@ import 'dotenv/config'
 import nodemailer from 'nodemailer';
 import RedisClient from '../config/redis.config';
 
-import fs from 'fs';
-import path from 'path';
+import makeLogFile from '../utils/logger';
 
 const transporter = nodemailer.createTransport({
   host: process.env.HOST_URI,
@@ -26,21 +25,25 @@ const SendEmail = async (to: string, subject: string, text: string) => {
     });
 
     const key = `email:log:${to}`
-    await RedisClient.set(key, subject, "EX", 60);
+    const data = `[${new Date().toISOString()}] Test email sent -> ${to} | Subject: ${subject}`
 
-    const logsDir = path.join(process.cwd(), "logs");
+    await RedisClient.set(key, data, "EX", 60);
 
-    if (!fs.existsSync(logsDir)) {
-      fs.mkdirSync(logsDir, { recursive: true });
-    }
+    await makeLogFile("email.log", `${key}`)
 
-    const logFile = path.join(logsDir, "email.log");
+    // const logsDir = path.join(process.cwd(), "logs");
 
-    const logEntry = `\n[${new Date().toISOString()}] Email sent -> ${to} | Subject: ${subject}`;
+    // if (!fs.existsSync(logsDir)) {
+    //   fs.mkdirSync(logsDir, { recursive: true });
+    // }
 
-    fs.appendFileSync(logFile, logEntry, 'utf-8');
+    // const logFile = path.join(logsDir, "email.log");
 
-    console.log(`Email sent and logged successfully`);
+    // const logEntry = `\n[${new Date().toISOString()}] Email sent -> ${to} | Subject: ${subject}`;
+
+    // fs.appendFileSync(logFile, logEntry, 'utf-8');
+
+    console.log(`Email sent to: ${to}`);
   }
   catch (err) {
     console.error(`Send email error: ${err}`);
