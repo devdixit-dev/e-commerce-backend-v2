@@ -2,7 +2,7 @@ import 'dotenv/config'
 import nodemailer from 'nodemailer';
 import RedisClient from '../config/redis.config';
 
-import makeLogFile from '../utils/logger';
+import { makeLogFileWRedis } from '../utils/logger';
 
 const transporter = nodemailer.createTransport({
   host: process.env.HOST_URI,
@@ -29,19 +29,7 @@ const SendEmail = async (to: string, subject: string, text: string) => {
 
     await RedisClient.set(key, data, "EX", 60);
 
-    await makeLogFile("email.log", `${key}`)
-
-    // const logsDir = path.join(process.cwd(), "logs");
-
-    // if (!fs.existsSync(logsDir)) {
-    //   fs.mkdirSync(logsDir, { recursive: true });
-    // }
-
-    // const logFile = path.join(logsDir, "email.log");
-
-    // const logEntry = `\n[${new Date().toISOString()}] Email sent -> ${to} | Subject: ${subject}`;
-
-    // fs.appendFileSync(logFile, logEntry, 'utf-8');
+    await makeLogFileWRedis("email.log", `${key}`);
 
     console.log(`Email sent to: ${to}`);
   }
