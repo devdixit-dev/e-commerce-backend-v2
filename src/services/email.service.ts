@@ -25,7 +25,7 @@ const SendEmail = async (to: string, subject: string, text: string) => {
       to, subject, text
     });
 
-    const key = `email:log:${to}:${Date.now()}`
+    const key = `email:log:${to}`
     await RedisClient.set(key, subject, "EX", 60);
 
     const logsDir = path.join(process.cwd(), "logs");
