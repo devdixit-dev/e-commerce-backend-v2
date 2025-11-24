@@ -25,7 +25,7 @@ const SendEmail = async (to: string, subject: string, text: string) => {
     });
 
     const key = `email:log:${to}`
-    const data = `[${new Date().toISOString()}] Test email sent -> ${to} | Subject: ${subject}`
+    const data = `\n[${new Date().toISOString()}] Email sent -> ${to} | Subject: ${subject}\n`
 
     await RedisClient.set(key, data, "EX", 60);
 

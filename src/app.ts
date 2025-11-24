@@ -1,4 +1,5 @@
 import express, { NextFunction, Request, Response } from 'express';
+import cookieParser from 'cookie-parser'
 
 import authRouter from './routes/auth.route';
 import UserRouter from './routes/user.route';
@@ -8,6 +9,7 @@ const createServer = async () => {
   const app = express();
 
   app.use(express.json());
+  app.use(cookieParser());
 
   app.get('/', async (req, res) => {
     res.json({
