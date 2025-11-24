@@ -2,11 +2,11 @@ import jwt from 'jsonwebtoken';
 
 const secret = process.env.JWT_SECRET;
 
-export const signJwt = (payload: string) => {
+export const signJwt = (payload: string, expiry: any) => {
   try{
     if(!payload) return null;
 
-    const signed = jwt.sign(JSON.parse(payload), `${secret}`, { expiresIn: '5m' });
+    const signed = jwt.sign(JSON.parse(payload), `${secret}`, { expiresIn: expiry });
     return signed;
   }
   catch(error) {

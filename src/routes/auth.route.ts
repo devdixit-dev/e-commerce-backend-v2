@@ -18,7 +18,7 @@ authRouter.post('/forgot-password', () => {});
 
 authRouter.post('/reset-password/:token', () => {});
 
-authRouter.post('/verify-email/:token', () => {});
+authRouter.put('/verify-email/:token', () => {});
 
 authRouter.post('/resend-verification', () => {});
 
