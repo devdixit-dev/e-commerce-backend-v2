@@ -15,10 +15,12 @@ export const authInitSchema = Joi.object({
   })
 });
 
-export const verifyOtp = Joi.object({
-  otp: Joi.number().min(6).max(8).required().messages({
-    "number.empty": 'Verification OTP is required',
-    "number.min": 'Verification OTP should have at least 6 numbers',
-    "number.max": 'Verification OTP should not over exceed 8 numbers'
+export const signInSchema = Joi.object({
+  email: Joi.string().required().messages({
+    "number.empty": "Mobile number is required"
+  }),
+  password: Joi.string().min(8).required().messages({
+    "password:empty": "Password is required",
+    "password:min": "Password have at least 8 characters"
   })
-});
+})

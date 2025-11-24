@@ -21,7 +21,7 @@ export const authInit = async (req: Request, res: Response) => {
       const hashPassword = await bcrypt.hash(password, 12);
 
       await User.create({
-        name, email, password: hashPassword 
+        name, email, password: hashPassword
       });
 
       await SendEmail(
@@ -41,6 +41,21 @@ export const authInit = async (req: Request, res: Response) => {
   }
   catch (error) {
     const entry = `\n[${new Date().toISOString()}] Error in auth init -> ${req.ip}\n`
+    makeLogFile("error.log", entry)
+
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+}
+
+export const signIn = async (req: Request, res: Response) => {
+  try {
+    
+  }
+  catch (error) {
+    const entry = `\n[${new Date().toISOString()}] Error in sign in -> ${req.ip}\n`
     makeLogFile("error.log", entry)
 
     return res.status(500).json({
