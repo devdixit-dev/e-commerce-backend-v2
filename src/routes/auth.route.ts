@@ -1,8 +1,12 @@
 import { Router } from "express";
 
+import { authInit } from "../controllers/auth.controller";
+import { Validate } from "../middlewares/validation.middleware";
+import { authInitSchema } from "../validators/auth.validator";
+
 const authRouter = Router();
 
-authRouter.post('/register', () => {});
+authRouter.post('/init', Validate(authInitSchema), authInit);
 
 authRouter.post('/login', () => {});
 
