@@ -27,7 +27,7 @@ export const authInit = async (req: Request, res: Response) => {
       await SendEmail(
         email,
         `Welcome Email`,
-        `Welcome ${name} to the E-commerce API. Your account is successfully associated with email ${email}.`
+        `Welcome ${name} to the E-commerce API. Your account is successfully created with email ${email}.`
       );
 
       const entry = `\n[${new Date().toISOString()}] Auth init -> IP: ${req.ip} | Name: ${name} | Email: ${email}\n`
