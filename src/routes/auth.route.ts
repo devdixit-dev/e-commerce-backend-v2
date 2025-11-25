@@ -8,11 +8,11 @@ const authRouter = Router();
 
 authRouter.post('/init', Validate(authInitSchema), authInit);
 
-authRouter.post('/login', Validate(signInSchema), signIn);
+authRouter.post('/signin', Validate(signInSchema), signIn);
 
 authRouter.post('/refresh-token', () => {});
 
-authRouter.post('/logout', () => {});
+authRouter.post('/signout', () => {});
 
 authRouter.post('/forgot-password', () => {});
 
