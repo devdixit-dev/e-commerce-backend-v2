@@ -1,8 +1,9 @@
 import { Router } from "express";
 
-import { authInit, signIn } from "../controllers/auth.controller";
+import { authInit, signIn, signOut } from "../controllers/auth.controller";
 import { Validate } from "../middlewares/validation.middleware";
 import { authInitSchema, signInSchema } from "../validators/auth.validator";
+import auth from "../middlewares/auth.middleware";
 
 const authRouter = Router();
 
@@ -12,7 +13,7 @@ authRouter.post('/signin', Validate(signInSchema), signIn);
 
 authRouter.post('/refresh-token', () => {});
 
-authRouter.post('/signout', () => {});
+authRouter.post('/signout', auth, signOut);
 
 authRouter.post('/forgot-password', () => {});
 

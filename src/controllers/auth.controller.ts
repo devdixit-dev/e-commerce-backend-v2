@@ -56,7 +56,7 @@ export const signIn = async (req: Request, res: Response) => {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email }).lean();
-    if(!user) {
+    if (!user) {
       return res.status(404).json({
         success: false,
         message: 'User not found'
@@ -64,7 +64,7 @@ export const signIn = async (req: Request, res: Response) => {
     }
 
     const matchPass = await bcrypt.compare(password, user.password);
-    if(!matchPass) {
+    if (!matchPass) {
       return res.status(403).json({
         success: false,
         message: 'Invalid email or password'
@@ -115,6 +115,26 @@ export const signIn = async (req: Request, res: Response) => {
   }
   catch (error) {
     const entry = `\n[${new Date().toISOString()}] Error in sign in -> ${req.ip}\n`
+    makeLogFile("error.log", entry)
+
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+}
+
+export const signOut = async (req: Request, res: Response) => {
+  try {
+    const id = (req as any).user.id
+    const user = await User.findById(id);
+
+    res.json({
+      user
+    })
+  }
+  catch (error) {
+    const entry = `\n[${new Date().toISOString()}] Error in sign out -> ${req.ip}\n`
     makeLogFile("error.log", entry)
 
     return res.status(500).json({
