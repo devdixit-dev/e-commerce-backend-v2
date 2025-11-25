@@ -78,7 +78,7 @@ export const signIn = async (req: Request, res: Response) => {
         { new: true }
       );
 
-      const entry = `\n[${new Date().toISOString()}] Sign in -> ${req.ip}\n`
+      const entry = `\n[${new Date().toISOString()}] Sign in init -> IP: ${req.ip} | ID: ${user._id}\n`
       makeLogFile("sign-in.log", entry);
 
       await SendEmail(
@@ -109,9 +109,6 @@ export const signIn = async (req: Request, res: Response) => {
       message: 'User logged in successfully',
       token: encypted
     });
-
-    // user.ips.push({ date: new Date(), url: req.originalUrl || req.url, ip: req.ip })
-    // user.markModified('ips')
   }
   catch (error) {
     const entry = `\n[${new Date().toISOString()}] Error in sign in -> ${req.ip}\n`
@@ -127,11 +124,30 @@ export const signIn = async (req: Request, res: Response) => {
 export const signOut = async (req: Request, res: Response) => {
   try {
     const id = (req as any).user.id
-    const user = await User.findById(id);
 
-    res.json({
-      user
-    })
+    const user = await User.findById(id);
+    if(!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    setTimeout(() => {
+      const entry = `\n[${new Date().toISOString()}] Sign out init -> IP: ${req.ip} | ID: ${user._id}\n`
+      makeLogFile("sign-out.log", entry);
+    }, 3000)
+
+    res.clearCookie('a_token', {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax'
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'User logged out'
+    });
   }
   catch (error) {
     const entry = `\n[${new Date().toISOString()}] Error in sign out -> ${req.ip}\n`
