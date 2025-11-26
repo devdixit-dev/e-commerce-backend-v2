@@ -214,7 +214,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
 export const verifyEmail = async (req: Request, res: Response) => {
   try {
     const { otp } = req.body;
-    if(!otp) {
+    if (!otp) {
       return res.status(411).json({
         success: false,
         message: 'OTP is required to verify your email'
@@ -222,7 +222,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
     }
 
     const token = req.cookies.v_token;
-    if(!token) { 
+    if (!token) {
       return res.status(404).json({
         success: false,
         message: 'Token not provided or invalid'
@@ -232,18 +232,23 @@ export const verifyEmail = async (req: Request, res: Response) => {
     const decrypted = verifyJwt(token);
 
     const storedOTP = await RedisClient.get(decrypted?.id || "")
-    
-    if(otp !== storedOTP) {
+
+    if (otp !== storedOTP) {
       return res.status(401).json({
         success: false,
         message: 'Incorrect OTP'
       });
     }
 
+    await User.findByIdAndUpdate(
+      decrypted?.id,
+      { isVerified: true },
+      { new: true }
+    );
+
     return res.status(200).json({
       success: true,
-      message: 'Now you can reset your password',
-      
+      message: 'Your email is verified'
     });
   }
   catch (error) {
@@ -258,10 +263,10 @@ export const verifyEmail = async (req: Request, res: Response) => {
 }
 
 export const resetPassword = async (req: Request, res: Response) => {
-  try{
+  try {
     const { newPassword, confirmNewPassword } = req.body;
 
-    if(newPassword !== confirmNewPassword) {
+    if (newPassword !== confirmNewPassword) {
       return res.status(411).json({
         success: false,
         message: "Password not match"
@@ -292,7 +297,48 @@ export const resetPassword = async (req: Request, res: Response) => {
       message: 'Your password reset successfully'
     });
   }
-  catch(error) {
+  catch (error) {
+    const entry = `\n[${new Date().toISOString()}] Error in reset password -> ${req.ip}\n`
+    makeLogFile("error.log", entry)
+
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+}
+
+export const resendVerification = async (req: Request, res: Response) => {
+  try {
+    const token = req.cookies.v_token;
+    const decrypted = verifyJwt(token);
+
+    const user = await User.findById(decrypted?.id).lean().select('-password');
+
+    if(user?.isVerified) {
+      return res.status(200).json({
+        success: false,
+        message: 'Your account is already verified'
+      });
+    }
+
+    const otp = (Math.floor(100000 + Math.random() * 900000)).toString();
+    await RedisClient.set(String(decrypted?.id), otp, "EX", 120);
+
+    setTimeout(async () => {
+      await SendEmail(
+        String(decrypted?.email),
+        `Verify Your Email - E commerce API`,
+        `Verify your account associated with email ${decrypted?.email}. Your verification OTP is ${otp}`
+      );
+    }, 3000);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Verification mail sent'
+    });
+  }
+  catch (error) {
     const entry = `\n[${new Date().toISOString()}] Error in reset password -> ${req.ip}\n`
     makeLogFile("error.log", entry)
 
