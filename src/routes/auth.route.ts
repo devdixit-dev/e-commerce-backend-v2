@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import { authInit, forgotPassword, signIn, signOut } from "../controllers/auth.controller";
+import { authInit, forgotPassword, signIn, signOut, verifyEmail } from "../controllers/auth.controller";
 import { Validate } from "../middlewares/validation.middleware";
 import { authInitSchema, signInSchema } from "../validators/auth.validator";
 import auth from "../middlewares/auth.middleware";
@@ -19,7 +19,7 @@ authRouter.post('/forgot-password', forgotPassword); // 1
 
 authRouter.post('/reset-password/:token', () => {}); // 3
 
-authRouter.put('/verify-email/:token', () => {}); // 2
+authRouter.put('/verify-email', verifyEmail); // 2
 
 authRouter.post('/resend-verification', () => {}); // 4
 

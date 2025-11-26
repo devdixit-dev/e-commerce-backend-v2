@@ -1,29 +1,40 @@
-import jwt from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 
-const secret = process.env.JWT_SECRET;
+const secret = process.env.JWT_SECRET as string;
 
-export const signJwt = (payload: object) => {
-  try{
-    if(!payload) return null;
-
-    const signed = jwt.sign(payload, `${secret}`, { expiresIn: '30m' });
-    return signed;
-  }
-  catch(error) {
-    console.error(`signing jwt error - ${error}`);
-    return null
-  }
+interface JwtPayloadType {
+  id: string;
+  name: string;
+  email: string;
+  verified: boolean
 }
 
-export const verifyJwt = (token: string) => {
-  try{
-    if(!token) return null;
+export const signJwt = (payload: JwtPayloadType): string | null => {
+  try {
+    if (!payload) return null;
 
-    const verified = jwt.verify(token, `${secret}`);
-    return verified
-  }
-  catch(error) {
-    console.error(`verifying jwt error - ${error}`);
+    return jwt.sign(payload, secret, { expiresIn: '30m' });
+  } catch (error) {
+    console.error(`signJwt error: ${error}`);
     return null;
   }
-}
+};
+
+export const verifyJwt = (token: string): JwtPayloadType | null => {
+  try {
+    if (!token) return null;
+
+    // jwt.verify can return: string | JwtPayload
+    const decoded = jwt.verify(token, secret) as JwtPayload;
+
+    // Validate shape
+    if (typeof decoded !== 'object' || !decoded.id) {
+      return null;
+    }
+
+    return decoded as JwtPayloadType;
+  } catch (error) {
+    console.error(`verifyJwt error: ${error}`);
+    return null;
+  }
+};

@@ -5,6 +5,7 @@ import { makeLogFile } from '../utils/logger'
 import User from '../models/user.model';
 import SendEmail from '../services/email.service';
 import { signJwt, verifyJwt } from '../services/jwt.service';
+import RedisClient from '../config/redis.config';
 
 export const authInit = async (req: Request, res: Response) => {
   try {
@@ -83,7 +84,7 @@ export const signIn = async (req: Request, res: Response) => {
     }, 3000);
 
     const payload = {
-      id: user._id,
+      id: user._id.toString(),
       name: user.name,
       email: user.email,
       verified: user.isVerified
@@ -176,8 +177,10 @@ export const forgotPassword = async (req: Request, res: Response) => {
       );
     }, 3000)
 
+    await RedisClient.set(user._id.toString(), otp, "EX", 120);
+
     const payload = {
-      id: user._id,
+      id: user._id.toString(),
       name: user.name,
       email: user.email,
       verified: user.isVerified
@@ -227,6 +230,27 @@ export const verifyEmail = async (req: Request, res: Response) => {
     }
 
     const decrypted = verifyJwt(token);
+
+    const storedOTP = await RedisClient.get(decrypted?.id || "")
+    
+    if(otp !== storedOTP) {
+      return res.status(401).json({
+        success: false,
+        message: 'Incorrect OTP'
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      decrypted?.id,
+      { isVerified: true },
+      { new: true }
+    )
+    .lean();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Now you can reset your password'
+    });
   }
   catch (error) {
     const entry = `\n[${new Date().toISOString()}] Error in forgot password -> ${req.ip}\n`
