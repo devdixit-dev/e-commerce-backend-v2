@@ -240,20 +240,60 @@ export const verifyEmail = async (req: Request, res: Response) => {
       });
     }
 
-    const user = await User.findByIdAndUpdate(
-      decrypted?.id,
-      { isVerified: true },
-      { new: true }
-    )
-    .lean();
-
     return res.status(200).json({
       success: true,
-      message: 'Now you can reset your password'
+      message: 'Now you can reset your password',
+      
     });
   }
   catch (error) {
     const entry = `\n[${new Date().toISOString()}] Error in forgot password -> ${req.ip}\n`
+    makeLogFile("error.log", entry)
+
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+}
+
+export const resetPassword = async (req: Request, res: Response) => {
+  try{
+    const { newPassword, confirmNewPassword } = req.body;
+
+    if(newPassword !== confirmNewPassword) {
+      return res.status(411).json({
+        success: false,
+        message: "Password not match"
+      });
+    }
+
+    const decryptedUser = verifyJwt(req.cookies.v_token);
+    const hashPassword = await bcrypt.hash(newPassword, 12);
+
+    const user = await User.findByIdAndUpdate(
+      decryptedUser?.id,
+      { password: hashPassword },
+      { new: true }
+    ).lean();
+
+    setTimeout(async () => {
+      await SendEmail(
+        String(decryptedUser?.email),
+        `Your password reset successfully`,
+        `Hello, ${decryptedUser?.name}. Your password is just changed. If this is not you, then you can contact us on email: msi.devdixit@gmail.com`
+      )
+    }, 3000);
+
+    res.clearCookie('v_token');
+
+    return res.status(200).json({
+      success: true,
+      message: 'Your password reset successfully'
+    });
+  }
+  catch(error) {
+    const entry = `\n[${new Date().toISOString()}] Error in reset password -> ${req.ip}\n`
     makeLogFile("error.log", entry)
 
     return res.status(500).json({

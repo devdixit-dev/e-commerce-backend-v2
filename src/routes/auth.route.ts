@@ -17,7 +17,7 @@ authRouter.post('/signout', auth, signOut);
 
 authRouter.post('/forgot-password', forgotPassword); // 1
 
-authRouter.post('/reset-password/:token', () => {}); // 3
+authRouter.post('/reset-password/', () => {}); // 3
 
 authRouter.put('/verify-email', verifyEmail); // 2
 
