@@ -3,7 +3,6 @@ import cookieParser from 'cookie-parser'
 
 import authRouter from './routes/auth.route';
 import UserRouter from './routes/user.route';
-import SendEmail from './services/email.service';
 import emailQueue from './queues/email.queue';
 
 const createServer = async () => {
@@ -36,8 +35,9 @@ const createServer = async () => {
       { to, subject, text },
       {
         removeOnComplete: true,
-        removeOnFail: false
-      }
+        removeOnFail: false,
+        attempts: 3
+      },
     );
 
     return res.json({

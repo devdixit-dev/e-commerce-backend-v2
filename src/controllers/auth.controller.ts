@@ -3,9 +3,10 @@ import bcrypt from 'bcryptjs';
 
 import { makeLogFile } from '../utils/logger'
 import User from '../models/user.model';
-import SendEmail from '../services/email.service';
 import { signJwt, verifyJwt } from '../services/jwt.service';
 import RedisClient from '../config/redis.config';
+import emailQueue from '../queues/email.queue';
+import loggerQueue from '../queues/logger.queue';
 
 export const authInit = async (req: Request, res: Response) => {
   try {
@@ -18,23 +19,45 @@ export const authInit = async (req: Request, res: Response) => {
         message: 'User already exist'
       });
     }
+    const hashPassword = await bcrypt.hash(password, 12);
 
-    setTimeout(async () => {
-      const hashPassword = await bcrypt.hash(password, 12);
+    await User.create({
+      name, email, password: hashPassword
+    });
 
-      await User.create({
-        name, email, password: hashPassword
-      });
+    await emailQueue.add(`email:${email}`,
+      {
+        to: email,
+        subject: `Welcome Email`,
+        text: `Welcome ${name} to the E-commerce API. Your account is successfully created with email ${email}.`
+      },
+      {
+        removeOnComplete: true,
+        removeOnFail: false,
+        attempts: 3
+      }
+    );
 
-      await SendEmail(
-        email,
-        `Welcome Email`,
-        `Welcome ${name} to the E-commerce API. Your account is successfully created with email ${email}.`
-      );
+    // await SendEmail(
+    //   email,
+    //   `Welcome Email`,
+    //   `Welcome ${name} to the E-commerce API. Your account is successfully created with email ${email}.`
+    // );
 
-      const entry = `\n[${new Date().toISOString()}] Auth init -> IP: ${req.ip} | Name: ${name} | Email: ${email}\n`
-      makeLogFile("auth-init.log", entry);
-    }, 3000);
+    // const entry = `\n[${new Date().toISOString()}] Auth init -> IP: ${req.ip} | Name: ${name} | Email: ${email}\n`
+    // makeLogFile("auth-init.log", entry);
+
+    await loggerQueue.add(`log:${req.ip}`,
+      {
+        filename: "auth-init.log",
+        entry: `\n[${new Date().toISOString()}] Auth init -> IP: ${req.ip} | Name: ${name} | Email: ${email}\n`
+      },
+      {
+        removeOnComplete: true,
+        removeOnFail: false,
+        attempts: 3
+      }
+    );
 
     return res.status(200).json({
       success: true,
@@ -72,16 +95,26 @@ export const signIn = async (req: Request, res: Response) => {
       });
     }
 
-    setTimeout(async () => {
-      await User.findByIdAndUpdate(
-        user._id,
-        { ips: { date: new Date, url: req.originalUrl || req.url, ip: req.ip } },
-        { new: true }
-      );
+    await User.findByIdAndUpdate(
+      user._id,
+      { ips: { date: new Date, url: req.originalUrl || req.url, ip: req.ip } },
+      { new: true }
+    );
 
-      const entry = `\n[${new Date().toISOString()}] Sign in init -> IP: ${req.ip} | ID: ${user._id}\n`
-      makeLogFile("sign-in.log", entry);
-    }, 3000);
+    // const entry = `\n[${new Date().toISOString()}] Sign in init -> IP: ${req.ip} | ID: ${user._id}\n`
+    // makeLogFile("sign-in.log", entry);
+
+    await loggerQueue.add(`log:${req.ip}`,
+      {
+        filename: "sign-in.log",
+        entry: `\n[${new Date().toISOString()}] Sign in init -> IP: ${req.ip} | ID: ${user._id}\n`
+      },
+      {
+        removeOnComplete: true,
+        removeOnFail: false,
+        attempts: 3
+      }
+    );
 
     const payload = {
       id: user._id.toString(),
@@ -127,10 +160,17 @@ export const signOut = async (req: Request, res: Response) => {
       });
     }
 
-    setTimeout(() => {
-      const entry = `\n[${new Date().toISOString()}] Sign out init -> IP: ${req.ip} | ID: ${user._id}\n`
-      makeLogFile("sign-out.log", entry);
-    }, 3000)
+    await loggerQueue.add(`log:${req.ip}`,
+      {
+        filename: "sign-out.log",
+        entry: `\n[${new Date().toISOString()}] Sign out -> IP: ${req.ip} | ID: ${user._id}\n`
+      },
+      {
+        removeOnComplete: true,
+        removeOnFail: false,
+        attempts: 3
+      }
+    );
 
     res.clearCookie('a_token', {
       httpOnly: true,
@@ -169,13 +209,25 @@ export const forgotPassword = async (req: Request, res: Response) => {
     const makeOTP = Math.floor(100000 + Math.random() * 900000);
     const otp = makeOTP.toString();
 
-    setTimeout(async () => {
-      await SendEmail(
-        user.email,
-        `Forgot Password - Verify Your Account`,
-        `Your verification OTP is ${otp}. This otp will remain only for 2 minutes`
-      );
-    }, 3000)
+    await emailQueue.add(`email:${email}`,
+      {
+        to: user.email,
+        subject: `Forgot Password - Verify Your Account`,
+        text: `Your verification OTP is ${otp}. This otp will remain only for 2 minutes`
+      },
+      {
+        removeOnComplete: true,
+        removeOnFail: false,
+        attempts: 3
+      }
+    )
+
+    // await SendEmail(
+    //   user.email,
+    //   `Forgot Password - Verify Your Account`,
+    //   `Your verification OTP is ${otp}. This otp will remain only for 2 minutes`
+    // );
+
 
     await RedisClient.set(user._id.toString(), otp, "EX", 120);
 
@@ -282,13 +334,26 @@ export const resetPassword = async (req: Request, res: Response) => {
       { new: true }
     ).lean();
 
-    setTimeout(async () => {
-      await SendEmail(
-        String(decryptedUser?.email),
-        `Your password reset successfully`,
-        `Hello, ${decryptedUser?.name}. Your password is just changed. If this is not you, then you can contact us on email: msi.devdixit@gmail.com`
-      )
-    }, 3000);
+    // setTimeout(async () => {
+    //   await SendEmail(
+    //     String(decryptedUser?.email),
+    //     `Your password reset successfully`,
+    //     `Hello, ${decryptedUser?.name}. Your password is just changed. If this is not you, then you can contact us on email: msi.devdixit@gmail.com`
+    //   )
+    // }, 3000);
+
+    await emailQueue.add(`email:${decryptedUser?.email}`,
+      {
+        to: decryptedUser?.email,
+        subject: `Your password reset successfully`,
+        text: `Hello, ${decryptedUser?.name}. Your password is just changed. If this is not you, then you can contact us on email: msi.devdixit@gmail.com`
+      },
+      {
+        removeOnComplete: true,
+        removeOnFail: false,
+        attempts: 3
+      }
+    )
 
     res.clearCookie('v_token');
 
@@ -315,7 +380,7 @@ export const resendVerification = async (req: Request, res: Response) => {
 
     const user = await User.findById(decrypted?.id).lean().select('-password');
 
-    if(user?.isVerified) {
+    if (user?.isVerified) {
       return res.status(200).json({
         success: false,
         message: 'Your account is already verified'
@@ -325,13 +390,26 @@ export const resendVerification = async (req: Request, res: Response) => {
     const otp = (Math.floor(100000 + Math.random() * 900000)).toString();
     await RedisClient.set(String(decrypted?.id), otp, "EX", 120);
 
-    setTimeout(async () => {
-      await SendEmail(
-        String(decrypted?.email),
-        `Verify Your Email - E commerce API`,
-        `Verify your account associated with email ${decrypted?.email}. Your verification OTP is ${otp}`
-      );
-    }, 3000);
+    // setTimeout(async () => {
+    //   await SendEmail(
+    //     String(decrypted?.email),
+    //     `Verify Your Email - E commerce API`,
+    //     `Verify your account associated with email ${decrypted?.email}. Your verification OTP is ${otp}`
+    //   );
+    // }, 3000);
+
+    await emailQueue.add(`email:${decrypted?.email}`,
+      {
+        to: decrypted?.email,
+        subject: `Verify Your Email - E commerce API`,
+        text: `Verify your account associated with email ${decrypted?.email}. Your verification OTP is ${otp}`
+      },
+      {
+        removeOnComplete: true,
+        removeOnFail: false,
+        attempts: 3
+      }
+    );
 
     return res.status(200).json({
       success: true,

@@ -1,9 +1,11 @@
 import { Worker } from 'bullmq';
+import { makeLogFile } from '../utils/logger';
 
 const worker = new Worker(
   'loggerQueue',
   async (job) => {
     console.log(`[worker] got job id=${job.id} name=${job.name}`);
+    makeLogFile(job.data.filename, job.data.entry)
   },
   {
     connection: {
