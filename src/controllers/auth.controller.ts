@@ -12,7 +12,7 @@ export const authInit = async (req: Request, res: Response) => {
   try {
     const { name, email, password } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).lean();
     if (user) {
       return res.status(400).json({
         success: false,
@@ -20,7 +20,7 @@ export const authInit = async (req: Request, res: Response) => {
       });
     }
 
-    const hashPassword = await bcrypt.hash(password, 12);
+    const hashPassword = await bcrypt.hash(password, 10);
     await User.create({
       name, email, password: hashPassword
     });
@@ -36,7 +36,7 @@ export const authInit = async (req: Request, res: Response) => {
         removeOnFail: false,
         attempts: 3
       }
-    );
+    ).catch(() => { });
 
     await loggerQueue.add(`log:${req.ip}`,
       {
@@ -48,7 +48,7 @@ export const authInit = async (req: Request, res: Response) => {
         removeOnFail: false,
         attempts: 3
       }
-    );
+    ).catch(() => { });
 
     return res.status(200).json({
       success: true,
@@ -69,7 +69,7 @@ export const signIn = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email }).lean();
+    const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -79,18 +79,19 @@ export const signIn = async (req: Request, res: Response) => {
 
     const matchPass = await bcrypt.compare(password, user.password);
     if (!matchPass) {
+      if (user.failedLoginAttempts >= 3) {
+        return res.status(403).json({
+          success: false,
+          message: "Your account is locked cause of 3 failed login attempts. Contact admin"
+        });
+      }
+
       user.failedLoginAttempts += 1;
-      
+      await user.save();
+
       return res.status(403).json({
         success: false,
         message: 'Invalid email or password'
-      });
-    }
-
-    if(user.failedLoginAttempts > 3) {
-      return res.status(403).json({
-        success: false,
-        message: "Your account is locked cause of 3 failed login attempts. Contact admin"
       });
     }
 
@@ -228,7 +229,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
     }
 
     const stored = await RedisClient.get(`otp:${user._id}`);
-    if (!stored || stored !== otp) {
+    if (!stored || stored !== String(otp)) {
       return res.status(401).json({
         success: false,
         message: "Incorrect OTP"
@@ -324,14 +325,14 @@ export const resendVerification = async (req: Request, res: Response) => {
     const { email } = req.body;
 
     const user = await User.findOne({ email });
-    if(!user) {
+    if (!user) {
       return res.status(404).json({
         success: false,
         message: "User not found"
       });
     }
 
-    if(user.isVerified) {
+    if (user.isVerified) {
       return res.status(200).json({
         success: false,
         message: "Your email is already verified"

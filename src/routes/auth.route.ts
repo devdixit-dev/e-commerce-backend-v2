@@ -19,7 +19,7 @@ authRouter.post('/forgot-password', forgotPassword); // 1
 
 authRouter.post('/reset-password', resetPassword); // 3
 
-authRouter.put('/verify-email', verifyEmail); // 2
+authRouter.post('/verify-email', verifyEmail); // 2
 
 authRouter.post('/resend-verification', resendVerification); // 4
 

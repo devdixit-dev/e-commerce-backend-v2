@@ -1,5 +1,5 @@
 import express, { NextFunction, Request, Response } from 'express';
-import cookieParser from 'cookie-parser'
+import cookieParser from 'cookie-parser';
 
 import authRouter from './routes/auth.route';
 import UserRouter from './routes/user.route';
@@ -24,8 +24,8 @@ const createServer = async () => {
     next();
   });
 
-  app.use('/api/v1/auth', authRouter);
-  app.use('/api/v1/user', UserRouter);
+  app.use('/api/auth', authRouter);
+  app.use('/api/user', UserRouter);
 
   app.post('/check', async (req, res) => {
     const { to, subject, text } = req.body;
