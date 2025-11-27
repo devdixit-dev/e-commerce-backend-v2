@@ -79,14 +79,20 @@ export const signIn = async (req: Request, res: Response) => {
 
     const matchPass = await bcrypt.compare(password, user.password);
     if (!matchPass) {
+      user.failedLoginAttempts += 1;
+      
       return res.status(403).json({
         success: false,
         message: 'Invalid email or password'
       });
     }
 
-    // const entry = `\n[${new Date().toISOString()}] Sign in init -> IP: ${req.ip} | ID: ${user._id}\n`
-    // makeLogFile("sign-in.log", entry);
+    if(user.failedLoginAttempts > 3) {
+      return res.status(403).json({
+        success: false,
+        message: "Your account is locked cause of 3 failed login attempts. Contact admin"
+      });
+    }
 
     const payload = {
       id: user._id.toString(),
@@ -295,6 +301,8 @@ export const resetPassword = async (req: Request, res: Response) => {
         attempts: 3
       }
     );
+
+    res.clearCookie('a_token');
 
     return res.status(200).json({
       success: true,

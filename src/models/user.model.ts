@@ -72,17 +72,11 @@ const userSchema = new mongoose.Schema({
   alternateContactNumber: {
     type: String
   },
-  ips: [{
-    date: {
-      type: String
-    },
-    url: {
-      type: String
-    },
-    ip: {
-      type: String
-    }
-  }]
+  failedLoginAttempts: {
+    type: Number,
+    default: 0,
+    maxLength: 3
+  }
 });
 
 const User = mongoose.model('User', userSchema);
