@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 
 import { makeLogFile } from '../utils/logger'
 import User from '../models/user.model';
-import { signJwt, verifyJwt } from '../services/jwt.service';
+import { signJwt } from '../services/jwt.service';
 import RedisClient from '../config/redis.config';
 import emailQueue from '../queues/email.queue';
 import loggerQueue from '../queues/logger.queue';
@@ -19,8 +19,8 @@ export const authInit = async (req: Request, res: Response) => {
         message: 'User already exist'
       });
     }
-    const hashPassword = await bcrypt.hash(password, 12);
 
+    const hashPassword = await bcrypt.hash(password, 12);
     await User.create({
       name, email, password: hashPassword
     });
@@ -37,15 +37,6 @@ export const authInit = async (req: Request, res: Response) => {
         attempts: 3
       }
     );
-
-    // await SendEmail(
-    //   email,
-    //   `Welcome Email`,
-    //   `Welcome ${name} to the E-commerce API. Your account is successfully created with email ${email}.`
-    // );
-
-    // const entry = `\n[${new Date().toISOString()}] Auth init -> IP: ${req.ip} | Name: ${name} | Email: ${email}\n`
-    // makeLogFile("auth-init.log", entry);
 
     await loggerQueue.add(`log:${req.ip}`,
       {
@@ -65,8 +56,7 @@ export const authInit = async (req: Request, res: Response) => {
     });
   }
   catch (error) {
-    const entry = `\n[${new Date().toISOString()}] Error in auth init -> ${req.ip}\n`
-    makeLogFile("error.log", entry)
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in auth init -> ${req.ip}\n`);
 
     return res.status(500).json({
       success: false,
@@ -95,14 +85,23 @@ export const signIn = async (req: Request, res: Response) => {
       });
     }
 
-    await User.findByIdAndUpdate(
-      user._id,
-      { ips: { date: new Date, url: req.originalUrl || req.url, ip: req.ip } },
-      { new: true }
-    );
-
     // const entry = `\n[${new Date().toISOString()}] Sign in init -> IP: ${req.ip} | ID: ${user._id}\n`
     // makeLogFile("sign-in.log", entry);
+
+    const payload = {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      verified: user.isVerified
+    }
+
+    const encypted = signJwt(payload);
+
+    res.cookie('a_token', encypted, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: 'lax'
+    });
 
     await loggerQueue.add(`log:${req.ip}`,
       {
@@ -116,21 +115,6 @@ export const signIn = async (req: Request, res: Response) => {
       }
     );
 
-    const payload = {
-      id: user._id.toString(),
-      name: user.name,
-      email: user.email,
-      verified: user.isVerified
-    }
-
-    const encypted = signJwt(payload);
-
-    res.cookie('a_token', encypted, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax'
-    });
-
     return res.status(200).json({
       success: true,
       message: 'User logged in successfully',
@@ -138,8 +122,7 @@ export const signIn = async (req: Request, res: Response) => {
     });
   }
   catch (error) {
-    const entry = `\n[${new Date().toISOString()}] Error in sign in -> ${req.ip}\n`
-    makeLogFile("error.log", entry)
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in sign in -> ${req.ip}\n`)
 
     return res.status(500).json({
       success: false,
@@ -150,20 +133,16 @@ export const signIn = async (req: Request, res: Response) => {
 
 export const signOut = async (req: Request, res: Response) => {
   try {
-    const id = (req as any).user.id
-
-    const user = await User.findById(id);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
+    res.clearCookie('a_token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: 'lax'
+    });
 
     await loggerQueue.add(`log:${req.ip}`,
       {
         filename: "sign-out.log",
-        entry: `\n[${new Date().toISOString()}] Sign out -> IP: ${req.ip} | ID: ${user._id}\n`
+        entry: `\n[${new Date().toISOString()}] Sign out -> IP: ${req.ip}\n`
       },
       {
         removeOnComplete: true,
@@ -172,20 +151,13 @@ export const signOut = async (req: Request, res: Response) => {
       }
     );
 
-    res.clearCookie('a_token', {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax'
-    });
-
     return res.status(200).json({
       success: true,
       message: 'User logged out'
     });
   }
   catch (error) {
-    const entry = `\n[${new Date().toISOString()}] Error in sign out -> ${req.ip}\n`
-    makeLogFile("error.log", entry)
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in sign out -> ${req.ip}\n`)
 
     return res.status(500).json({
       success: false,
@@ -206,55 +178,29 @@ export const forgotPassword = async (req: Request, res: Response) => {
       });
     }
 
-    const makeOTP = Math.floor(100000 + Math.random() * 900000);
-    const otp = makeOTP.toString();
+    const otp = String(Math.floor(100000 + Math.random() * 900000))
+    await RedisClient.set(`otp:${user._id}`, otp, "EX", 120);
 
     await emailQueue.add(`email:${email}`,
       {
         to: user.email,
-        subject: `Forgot Password - Verify Your Account`,
-        text: `Your verification OTP is ${otp}. This otp will remain only for 2 minutes`
+        subject: `Forgot Password`,
+        text: `Your verification OTP is ${otp}. This otp will valid only for 2 minutes`
       },
       {
         removeOnComplete: true,
         removeOnFail: false,
         attempts: 3
       }
-    )
-
-    // await SendEmail(
-    //   user.email,
-    //   `Forgot Password - Verify Your Account`,
-    //   `Your verification OTP is ${otp}. This otp will remain only for 2 minutes`
-    // );
-
-
-    await RedisClient.set(user._id.toString(), otp, "EX", 120);
-
-    const payload = {
-      id: user._id.toString(),
-      name: user.name,
-      email: user.email,
-      verified: user.isVerified
-    }
-
-    const encypted = signJwt(payload);
-
-    res.cookie('v_token', encypted, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax'
-    });
+    );
 
     return res.status(200).json({
       success: true,
-      message: `We've sent you the verification OTP on your email`,
-      token: encypted
+      message: `We've sent you the verification OTP on your email`
     });
   }
   catch (error) {
-    const entry = `\n[${new Date().toISOString()}] Error in forgot password -> ${req.ip}\n`
-    makeLogFile("error.log", entry)
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in forgot password -> ${req.ip}\n`);
 
     return res.status(500).json({
       success: false,
@@ -265,37 +211,27 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
 export const verifyEmail = async (req: Request, res: Response) => {
   try {
-    const { otp } = req.body;
-    if (!otp) {
-      return res.status(411).json({
-        success: false,
-        message: 'OTP is required to verify your email'
-      });
-    }
+    const { email, otp } = req.body;
 
-    const token = req.cookies.v_token;
-    if (!token) {
+    const user = await User.findOne({ email });
+    if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'Token not provided or invalid'
+        message: "User not found"
       });
     }
 
-    const decrypted = verifyJwt(token);
-
-    const storedOTP = await RedisClient.get(decrypted?.id || "")
-
-    if (otp !== storedOTP) {
+    const stored = await RedisClient.get(`otp:${user._id}`);
+    if (!stored || stored !== otp) {
       return res.status(401).json({
         success: false,
-        message: 'Incorrect OTP'
+        message: "Incorrect OTP"
       });
     }
 
     await User.findByIdAndUpdate(
-      decrypted?.id,
-      { isVerified: true },
-      { new: true }
+      user._id,
+      { isVerified: true }
     );
 
     return res.status(200).json({
@@ -304,8 +240,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
     });
   }
   catch (error) {
-    const entry = `\n[${new Date().toISOString()}] Error in forgot password -> ${req.ip}\n`
-    makeLogFile("error.log", entry)
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in verifying email -> ${req.ip}\n`)
 
     return res.status(500).json({
       success: false,
@@ -316,7 +251,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
 
 export const resetPassword = async (req: Request, res: Response) => {
   try {
-    const { newPassword, confirmNewPassword } = req.body;
+    const { email, otp, newPassword, confirmNewPassword } = req.body;
 
     if (newPassword !== confirmNewPassword) {
       return res.status(411).json({
@@ -325,84 +260,34 @@ export const resetPassword = async (req: Request, res: Response) => {
       });
     }
 
-    const decryptedUser = verifyJwt(req.cookies.v_token);
-    const hashPassword = await bcrypt.hash(newPassword, 12);
-
-    const user = await User.findByIdAndUpdate(
-      decryptedUser?.id,
-      { password: hashPassword },
-      { new: true }
-    ).lean();
-
-    // setTimeout(async () => {
-    //   await SendEmail(
-    //     String(decryptedUser?.email),
-    //     `Your password reset successfully`,
-    //     `Hello, ${decryptedUser?.name}. Your password is just changed. If this is not you, then you can contact us on email: msi.devdixit@gmail.com`
-    //   )
-    // }, 3000);
-
-    await emailQueue.add(`email:${decryptedUser?.email}`,
-      {
-        to: decryptedUser?.email,
-        subject: `Your password reset successfully`,
-        text: `Hello, ${decryptedUser?.name}. Your password is just changed. If this is not you, then you can contact us on email: msi.devdixit@gmail.com`
-      },
-      {
-        removeOnComplete: true,
-        removeOnFail: false,
-        attempts: 3
-      }
-    )
-
-    res.clearCookie('v_token');
-
-    return res.status(200).json({
-      success: true,
-      message: 'Your password reset successfully'
-    });
-  }
-  catch (error) {
-    const entry = `\n[${new Date().toISOString()}] Error in reset password -> ${req.ip}\n`
-    makeLogFile("error.log", entry)
-
-    return res.status(500).json({
-      success: false,
-      message: 'Internal server error'
-    });
-  }
-}
-
-export const resendVerification = async (req: Request, res: Response) => {
-  try {
-    const token = req.cookies.v_token;
-    const decrypted = verifyJwt(token);
-
-    const user = await User.findById(decrypted?.id).lean().select('-password');
-
-    if (user?.isVerified) {
-      return res.status(200).json({
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({
         success: false,
-        message: 'Your account is already verified'
+        message: "User not found"
       });
     }
 
-    const otp = (Math.floor(100000 + Math.random() * 900000)).toString();
-    await RedisClient.set(String(decrypted?.id), otp, "EX", 120);
+    const stored = await RedisClient.get(`otp:${user._id}`);
+    if (!stored || stored !== otp) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid OTP"
+      });
+    }
 
-    // setTimeout(async () => {
-    //   await SendEmail(
-    //     String(decrypted?.email),
-    //     `Verify Your Email - E commerce API`,
-    //     `Verify your account associated with email ${decrypted?.email}. Your verification OTP is ${otp}`
-    //   );
-    // }, 3000);
+    const hashed = await bcrypt.hash(newPassword, 12);
 
-    await emailQueue.add(`email:${decrypted?.email}`,
+    await User.findByIdAndUpdate(
+      user._id,
+      { password: hashed }
+    );
+
+    await emailQueue.add(`email:${user?.email}`,
       {
-        to: decrypted?.email,
-        subject: `Verify Your Email - E commerce API`,
-        text: `Verify your account associated with email ${decrypted?.email}. Your verification OTP is ${otp}`
+        to: user?.email,
+        subject: `Your password reset successfully`,
+        text: `Hello, ${user?.name}. Your password is just changed. If this is not you, then you can contact us on email: msi.devdixit@gmail.com`
       },
       {
         removeOnComplete: true,
@@ -413,12 +298,61 @@ export const resendVerification = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Verification mail sent'
+      message: 'Your password reset successfully'
     });
   }
   catch (error) {
-    const entry = `\n[${new Date().toISOString()}] Error in reset password -> ${req.ip}\n`
-    makeLogFile("error.log", entry)
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in reset password -> ${req.ip}\n`)
+
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+}
+
+export const resendVerification = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+    if(!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    if(user.isVerified) {
+      return res.status(200).json({
+        success: false,
+        message: "Your email is already verified"
+      });
+    }
+
+    const otp = String(Math.floor(100000 + Math.random() * 900000))
+    await RedisClient.set(`otp:${user._id}`, otp, "EX", 120);
+
+    await emailQueue.add(`email:${email}`,
+      {
+        to: user.email,
+        subject: `Forgot Password - Verify Your Account`,
+        text: `Your verification OTP is ${otp}. This otp will valid only for 2 minutes`
+      },
+      {
+        removeOnComplete: true,
+        removeOnFail: false,
+        attempts: 3
+      }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Verification mail sent"
+    });
+  }
+  catch (error) {
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in reset password -> ${req.ip}\n`)
 
     return res.status(500).json({
       success: false,
