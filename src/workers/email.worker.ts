@@ -1,0 +1,29 @@
+import { Worker } from 'bullmq';
+import SendEmail from '../services/email.service';
+
+const worker = new Worker(
+  'emailQueue',
+  async (job) => {
+    console.log(`[worker] got job id=${job.id} name=${job.name}`);
+    await SendEmail(job.data.to, job.data.subject, job.data.text);
+  },
+  {
+    connection: {
+      host: process.env.REDIS_HOST || 'localhost',
+      port: Number(process.env.REDIS_PORT) || 6379,
+    },
+    concurrency: 1
+  }
+);
+
+worker.on("completed", (job) => {
+  console.log(`[worker:${job.id}] completed`);
+});
+
+worker.on("failed", (job, error) => {
+  console.error(`[worker:${job?.id}] failed, ${error.message}`);
+});
+
+worker.on('error', (err) => {
+  console.error('[worker] error', err);
+});

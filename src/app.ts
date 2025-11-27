@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser'
 import authRouter from './routes/auth.route';
 import UserRouter from './routes/user.route';
 import SendEmail from './services/email.service';
+import emailQueue from './queues/email.queue';
 
 const createServer = async () => {
   const app = express();
@@ -27,12 +28,17 @@ const createServer = async () => {
   app.use('/api/v1/auth', authRouter);
   app.use('/api/v1/user', UserRouter);
 
-  app.post('/check', (req, res) => {
+  app.post('/check', async (req, res) => {
     const { to, subject, text } = req.body;
 
-    setTimeout(async () => {
-      await SendEmail(to, subject, text);
-    }, 3000);
+    await emailQueue.add(
+      `email:${to}`,
+      { to, subject, text },
+      {
+        removeOnComplete: true,
+        removeOnFail: false
+      }
+    );
 
     return res.json({
       success: true,
