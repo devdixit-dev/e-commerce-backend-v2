@@ -1,10 +1,13 @@
 import { Router } from "express";
+import { profile, updateProfile } from "../controllers/user.controller";
+import { Validate } from "../middlewares/validation.middleware";
+import { updateDataSchema } from "../validators/user.validator";
 
 const UserRouter = Router();
 
-UserRouter.get('/profile', () => {});
+UserRouter.get('/profile', profile);
 
-UserRouter.put('/profile', () => {});
+UserRouter.put('/profile', Validate(updateDataSchema), updateProfile);
 
 UserRouter.patch('/change-password', () => {});
 

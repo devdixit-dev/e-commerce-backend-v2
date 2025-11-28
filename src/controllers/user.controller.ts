@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import bcrypt from 'bcryptjs';
 
 import { makeLogFile } from "../utils/logger"
 import User from "../models/user.model";
@@ -42,16 +43,6 @@ export const updateProfile = async (req: Request, res: Response) => {
       alternateContactNumber
     } = req.body;
 
-    const {
-      contactPerson,
-      contactnumber,
-      pincode,
-      locality,
-      city,
-      state,
-      country
-    } = address || {};
-
     const user = await User.findById((req as any)?.user?.id)
       .select('-__v -isActive -failedLoginAttempts')
       .lean();
@@ -70,16 +61,6 @@ export const updateProfile = async (req: Request, res: Response) => {
     if (gender) updatePayload.gender = gender;
     if (alternateContactNumber) updatePayload.alternateContactNumber = alternateContactNumber;
 
-    if (address) {
-      if (contactPerson) updatePayload["address.contactPerson"] = contactPerson;
-      if (contactnumber) updatePayload["address.contactnumber"] = contactnumber;
-      if (pincode) updatePayload["address.pincode"] = pincode;
-      if (locality) updatePayload["address.locality"] = locality;
-      if (city) updatePayload["address.city"] = city;
-      if (state) updatePayload["address.state"] = state;
-      if (country) updatePayload["address.country"] = country;
-    }
-
     await User.updateOne({ _id: user._id }, { $set: updatePayload });
 
     await emailQueue.add(`email:${user.email}`,
@@ -93,7 +74,7 @@ export const updateProfile = async (req: Request, res: Response) => {
         removeOnFail: false,
         attempts: 3
       }
-    ).catch(() => {});
+    ).catch(() => { });
 
     return res.status(200).json({
       success: true,
@@ -110,13 +91,161 @@ export const updateProfile = async (req: Request, res: Response) => {
   }
 }
 
-export const changePassword = () => { }
+export const changePassword = async (req: Request, res: Response) => {
+  try {
+    const user = await User.findById((req as any)?.user?.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
 
-export const removeAccount = () => { }
+    const { newPassword } = req.body;
+    if (!newPassword) {
+      return res.status(411).json({
+        success: false,
+        message: 'Password field is required to change your password'
+      });
+    }
 
-export const addresses = () => { }
+    const hash = await bcrypt.hash(newPassword, 10);
 
-export const addAddress = () => { }
+    await User.findByIdAndUpdate(
+      user._id,
+      { password: hash }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Your password changed successfully"
+    });
+  }
+  catch (error) {
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in changing password -> ${req.ip}\n`);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+}
+
+export const removeAccount = async (req: Request, res: Response) => {
+  try {
+    const user = await User.findById((req as any)?.user?.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    await User.findByIdAndUpdate(
+      user._id,
+      { isActive: false }
+    );
+
+    await emailQueue.add(
+      `email:${user.email}`,
+      {
+        to: user.email,
+        subject: `Account Removed`,
+        text: `Your account is removed successfully.`
+      }
+    ).catch(() => { });
+
+    res.clearCookie('a_token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: 'lax'
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Your account remove successfully"
+    });
+  }
+  catch (error) {
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in removing account -> ${req.ip}\n`);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+}
+
+export const addresses = async (req: Request, res: Response) => {
+  try {
+    const user = await User.findById((req as any)?.user?.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `You have ${user.address.length} addresses`,
+      data: user.address
+    });
+  }
+  catch (error) {
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in getting addresses -> ${req.ip}\n`);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+}
+
+export const addAddress = async (req: Request, res: Response) => {
+  try {
+    const {
+      contactPerson,
+      contactnumber,
+      addressLineOne,
+      addressLineTwo,
+      pincode,
+      locality,
+      city,
+      state,
+      country
+    } = req.body;
+
+    let filter: any = {};
+    if(contactPerson) filter.contactPerson = contactPerson;
+    if(contactnumber) filter.contactnumber = contactnumber;
+    if(addressLineOne) filter.addressLineOne = addressLineOne;
+    if(addressLineTwo) filter.addressLineTwo = addressLineTwo;
+    if(pincode) filter.pincode = pincode;
+    if(locality) filter.locality = locality;
+    if(city) filter.city = city;
+    if(state) filter.state = state;
+    if(country) filter.country = country;
+
+    await User.findByIdAndUpdate(
+      (req as any).user.id,
+      filter
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Address added successfully"
+    });
+  }
+  catch (error) {
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in adding addresses -> ${req.ip}\n`);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+}
 
 export const updateAddress = () => { }
 

@@ -41,6 +41,14 @@ const userSchema = new mongoose.Schema({
     contactnumber: {
       type: String
     },
+    addressLineOne: {
+      type: String,
+      required: true
+    },
+    addressLineTwo: {
+      type: String,
+      required: true
+    },
     pincode: {
       type: String,
       minLength: [6, 'pincode should be at least 6 characters'],
