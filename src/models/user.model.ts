@@ -71,6 +71,10 @@ const userSchema = new mongoose.Schema({
       default: 'India'
     }
   },
+  wishlist: [{
+    productID: mongoose.Schema.Types.ObjectId,
+    ref: 'Product'
+  }],
   dob: {
     type: String
   },

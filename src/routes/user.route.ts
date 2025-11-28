@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { profile, updateProfile } from "../controllers/user.controller";
+import { addAddress, address, addToWishlist, changePassword, profile, removeAccount, removeFromWishlist, updateAddress, updateProfile, wishlist } from "../controllers/user.controller";
 import { Validate } from "../middlewares/validation.middleware";
 import { updateDataSchema } from "../validators/user.validator";
 
@@ -9,20 +9,20 @@ UserRouter.get('/profile', profile);
 
 UserRouter.put('/profile', Validate(updateDataSchema), updateProfile);
 
-UserRouter.patch('/change-password', () => {});
+UserRouter.patch('/change-password', changePassword);
 
-UserRouter.delete('/account', () => {});
+UserRouter.delete('/account', removeAccount);
 
-UserRouter.get('/addresses', () => {});
+UserRouter.get('/address', address);
 
-UserRouter.post('/addresses', () => {});
+UserRouter.post('/address', addAddress);
 
-UserRouter.put('/addresses/:id', () => {});
+UserRouter.put('/address', updateAddress);
 
-UserRouter.get('/wishlist', () => {});
+UserRouter.get('/wishlist', wishlist);
 
-UserRouter.post('/wishlist/:productId', () => {});
+UserRouter.post('/wishlist/:productId', addToWishlist);
 
-UserRouter.delete('/wishlist/:productId', () => {});
+UserRouter.delete('/wishlist/:productId', removeFromWishlist);
 
 export default UserRouter;

@@ -50,7 +50,7 @@ export const updateProfile = async (req: Request, res: Response) => {
 
     const update = await User.findByIdAndUpdate(
       (req as any).user.id,
-      { contactNumber, dob, gender, alternateContactNumber }
+      updatePayload
     )
       .select("-__v -isActive -failedLoginAttempts")
       .lean();
@@ -313,7 +313,7 @@ export const updateAddress = async (req: Request, res: Response) => {
     }
 
     return res.status(200).json({
-      success: false,
+      success: true,
       message: "Your address was updated"
     });
   }
@@ -327,8 +327,106 @@ export const updateAddress = async (req: Request, res: Response) => {
   }
 }
 
-export const wishlist = () => { }
+export const wishlist = async (req: Request, res: Response) => {
+  try{
+    const user = await User.findById((req as any).user.id)
+    .lean();
 
-export const addToWishlist = () => { }
+    if(!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
 
-export const removeFromWishlist = () => { }
+    return res.status(200).json({
+      success: true,
+      message: `You have ${user.wishlist.length} items in your wishlist`,
+      data: user.wishlist
+    });
+  }
+  catch(error) {
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in getting wishlist -> ${req.ip}\n`);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+}
+
+export const addToWishlist = async (req: Request, res: Response) => {
+  try{
+    const id = req.params.productId;
+    if(!id) {
+      return res.status(400).json({
+        success: false,
+        message: "Product ID is required"
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      (req as any).user.id,
+      { $push: { wishlist: id } }
+    );
+
+    if(!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Product added to wishlist"
+    });
+  }
+  catch(error) {
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in adding item to wishlist -> ${req.ip}\n`);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+}
+
+export const removeFromWishlist = async (req: Request, res: Response) => {
+  try{
+    const id = req.params.productId;
+    if(!id) {
+      return res.status(400).json({
+        success: false,
+        message: "Product ID is required"
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      (req as any).user.id,
+      {
+        $pull: { wishlist: id }
+      }
+    );
+
+    if(!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Product removed from wishlist"
+    });
+  }
+  catch(error) {
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in removing item to wishlist -> ${req.ip}\n`);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+}
