@@ -20,7 +20,8 @@ const userSchema = new mongoose.Schema({
     type: String,
     minLength: [8, 'password should be at least 8 characters'],
     maxLength: [80, 'password should not exceed limit of 80 characters'],
-    required: true
+    required: true,
+    select: false
   },
   isActive: {
     type: Boolean,
@@ -37,7 +38,7 @@ const userSchema = new mongoose.Schema({
       maxLength: [40, 'name should not exceed limit of 40 characters'],
       trim: true
     },
-    contactNumber: {
+    contactnumber: {
       type: String
     },
     pincode: {
@@ -77,7 +78,7 @@ const userSchema = new mongoose.Schema({
     default: 0,
     maxLength: 3
   }
-});
+}, { timestamps: true });
 
 const User = mongoose.model('User', userSchema);
 
