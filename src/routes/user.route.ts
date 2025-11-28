@@ -19,8 +19,6 @@ UserRouter.post('/addresses', () => {});
 
 UserRouter.put('/addresses/:id', () => {});
 
-UserRouter.delete('/addresses/:id', () => {});
-
 UserRouter.get('/wishlist', () => {});
 
 UserRouter.post('/wishlist/:productId', () => {});

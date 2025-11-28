@@ -31,7 +31,7 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  address: [{
+  address: {
     contactPerson: {
       type: String,
       minLength: [4, 'name should be at least 4 characters'],
@@ -70,7 +70,7 @@ const userSchema = new mongoose.Schema({
       type: String,
       default: 'India'
     }
-  }],
+  },
   dob: {
     type: String
   },

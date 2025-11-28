@@ -37,37 +37,36 @@ export const updateProfile = async (req: Request, res: Response) => {
   try {
     const {
       contactNumber,
-      address,
       dob,
       gender,
       alternateContactNumber
     } = req.body;
 
-    const user = await User.findById((req as any)?.user?.id)
-      .select('-__v -isActive -failedLoginAttempts')
+    let updatePayload: any = {};
+    if (contactNumber) updatePayload.contactNumber = contactNumber;
+    if (dob) updatePayload.dob = dob;
+    if (gender) updatePayload.gender = gender;
+    if (alternateContactNumber) updatePayload.alternateContactNumber = alternateContactNumber;
+
+    const update = await User.findByIdAndUpdate(
+      (req as any).user.id,
+      { contactNumber, dob, gender, alternateContactNumber }
+    )
+      .select("-__v -isActive -failedLoginAttempts")
       .lean();
 
-    if (!user) {
+    if (!update) {
       return res.status(404).json({
         success: false,
         message: "User not found"
       });
     }
 
-    let updatePayload: any = {};
-
-    if (contactNumber) updatePayload.contactNumber = contactNumber;
-    if (dob) updatePayload.dob = dob;
-    if (gender) updatePayload.gender = gender;
-    if (alternateContactNumber) updatePayload.alternateContactNumber = alternateContactNumber;
-
-    await User.updateOne({ _id: user._id }, { $set: updatePayload });
-
-    await emailQueue.add(`email:${user.email}`,
+    await emailQueue.add(`email:${update.email}`,
       {
-        to: user.email,
+        to: update.email,
         subject: `Details Updated`,
-        text: `Hello, ${user.name} Your details has been updated successfully.`
+        text: `Hello, ${update.name} Your details has been updated successfully.`
       },
       {
         removeOnComplete: true,
@@ -93,14 +92,6 @@ export const updateProfile = async (req: Request, res: Response) => {
 
 export const changePassword = async (req: Request, res: Response) => {
   try {
-    const user = await User.findById((req as any)?.user?.id);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found"
-      });
-    }
-
     const { newPassword } = req.body;
     if (!newPassword) {
       return res.status(411).json({
@@ -111,10 +102,17 @@ export const changePassword = async (req: Request, res: Response) => {
 
     const hash = await bcrypt.hash(newPassword, 10);
 
-    await User.findByIdAndUpdate(
-      user._id,
+    const change = await User.findByIdAndUpdate(
+      (req as any)?.user?.id,
       { password: hash }
     );
+
+    if (!change) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
 
     return res.status(200).json({
       success: true,
@@ -133,23 +131,22 @@ export const changePassword = async (req: Request, res: Response) => {
 
 export const removeAccount = async (req: Request, res: Response) => {
   try {
-    const user = await User.findById((req as any)?.user?.id);
-    if (!user) {
+    const remove = await User.findByIdAndUpdate(
+      (req as any).user.id,
+      { isActive: false }
+    );
+
+    if (!remove) {
       return res.status(404).json({
         success: false,
         message: "User not found"
       });
     }
 
-    await User.findByIdAndUpdate(
-      user._id,
-      { isActive: false }
-    );
-
     await emailQueue.add(
-      `email:${user.email}`,
+      `email:${remove.email}`,
       {
-        to: user.email,
+        to: remove.email,
         subject: `Account Removed`,
         text: `Your account is removed successfully.`
       }
@@ -176,7 +173,7 @@ export const removeAccount = async (req: Request, res: Response) => {
   }
 }
 
-export const addresses = async (req: Request, res: Response) => {
+export const address = async (req: Request, res: Response) => {
   try {
     const user = await User.findById((req as any)?.user?.id);
     if (!user) {
@@ -188,7 +185,7 @@ export const addresses = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       success: true,
-      message: `You have ${user.address.length} addresses`,
+      message: `Address fetched`,
       data: user.address
     });
   }
@@ -217,20 +214,39 @@ export const addAddress = async (req: Request, res: Response) => {
     } = req.body;
 
     let filter: any = {};
-    if(contactPerson) filter.contactPerson = contactPerson;
-    if(contactnumber) filter.contactnumber = contactnumber;
-    if(addressLineOne) filter.addressLineOne = addressLineOne;
-    if(addressLineTwo) filter.addressLineTwo = addressLineTwo;
-    if(pincode) filter.pincode = pincode;
-    if(locality) filter.locality = locality;
-    if(city) filter.city = city;
-    if(state) filter.state = state;
-    if(country) filter.country = country;
+    if (contactPerson) filter.contactPerson = contactPerson;
+    if (contactnumber) filter.contactnumber = contactnumber;
+    if (addressLineOne) filter.addressLineOne = addressLineOne;
+    if (addressLineTwo) filter.addressLineTwo = addressLineTwo;
+    if (pincode) filter.pincode = pincode;
+    if (locality) filter.locality = locality;
+    if (city) filter.city = city;
+    if (state) filter.state = state;
+    if (country) filter.country = country;
 
-    await User.findByIdAndUpdate(
+    const add = await User.findByIdAndUpdate(
       (req as any).user.id,
-      filter
+      {
+        address: {
+          contactPerson,
+          contactnumber,
+          addressLineOne,
+          addressLineTwo,
+          pincode,
+          locality,
+          city,
+          state,
+          country
+        }
+      }
     );
+
+    if (!add) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
 
     return res.status(200).json({
       success: true,
@@ -247,9 +263,69 @@ export const addAddress = async (req: Request, res: Response) => {
   }
 }
 
-export const updateAddress = () => { }
+export const updateAddress = async (req: Request, res: Response) => {
+  try {
+    const {
+      contactPerson,
+      contactnumber,
+      addressLineOne,
+      addressLineTwo,
+      pincode,
+      locality,
+      city,
+      state,
+      country
+    } = req.body;
 
-export const removeAddress = () => { }
+    let filter: any = {};
+    if (contactPerson) filter.contactPerson = contactPerson;
+    if (contactnumber) filter.contactnumber = contactnumber;
+    if (addressLineOne) filter.addressLineOne = addressLineOne;
+    if (addressLineTwo) filter.addressLineTwo = addressLineTwo;
+    if (pincode) filter.pincode = pincode;
+    if (locality) filter.locality = locality;
+    if (city) filter.city = city;
+    if (state) filter.state = state;
+    if (country) filter.country = country;
+
+    const updateAddress = await User.findByIdAndUpdate(
+      (req as any).user.id,
+      {
+        address: {
+          contactPerson,
+          contactnumber,
+          addressLineOne,
+          addressLineTwo,
+          pincode,
+          locality,
+          city,
+          state,
+          country
+        }
+      }
+    );
+
+    if (!updateAddress) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    return res.status(200).json({
+      success: false,
+      message: "Your address was updated"
+    });
+  }
+  catch (error) {
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in updating addresse -> ${req.ip}\n`);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+}
 
 export const wishlist = () => { }
 
