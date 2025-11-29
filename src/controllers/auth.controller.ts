@@ -107,7 +107,8 @@ export const signIn = async (req: Request, res: Response) => {
     res.cookie('a_token', encypted, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: 'lax'
+      sameSite: 'lax',
+      maxAge: 30 * 60 * 1000
     });
 
     await loggerQueue.add(`log:${req.ip}`,

@@ -72,7 +72,7 @@ const userSchema = new mongoose.Schema({
     }
   },
   wishlist: [{
-    productID: mongoose.Schema.Types.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
   }],
   dob: {
     type: String

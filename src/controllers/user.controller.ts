@@ -329,8 +329,8 @@ export const wishlist = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       success: true,
-      message: `You have ${user.wishlist.length} items in your wishlist`,
-      data: user.wishlist
+      message: `You have ${user.wishlist ? user.wishlist.length : 0} products in your wishlist`,
+      data: user.wishlist || []
     });
   }
   catch(error) {
