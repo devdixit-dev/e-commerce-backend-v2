@@ -56,7 +56,7 @@ export const authInit = async (req: Request, res: Response) => {
     });
   }
   catch (error) {
-    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in auth init -> ${req.ip}\n`);
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in auth init -> ${req.ip} - Error ${error}\n`);
 
     return res.status(500).json({
       success: false,
@@ -69,7 +69,7 @@ export const signIn = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select('+password');
     if (!user || !user.isActive) {
       return res.status(404).json({
         success: false,
@@ -129,7 +129,8 @@ export const signIn = async (req: Request, res: Response) => {
     });
   }
   catch (error) {
-    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in sign in -> ${req.ip}\n`)
+    console.error(error);
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in sign in -> ${req.ip} - Error ${error}\n`)
 
     return res.status(500).json({
       success: false,
@@ -164,7 +165,7 @@ export const signOut = async (req: Request, res: Response) => {
     });
   }
   catch (error) {
-    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in sign out -> ${req.ip}\n`)
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in sign out -> ${req.ip} - Error ${error}\n`)
 
     return res.status(500).json({
       success: false,
@@ -207,7 +208,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     });
   }
   catch (error) {
-    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in forgot password -> ${req.ip}\n`);
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in forgot password -> ${req.ip} - Error ${error}\n`);
 
     return res.status(500).json({
       success: false,
@@ -247,7 +248,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
     });
   }
   catch (error) {
-    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in verifying email -> ${req.ip}\n`)
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in verifying email -> ${req.ip} - Error ${error}\n`)
 
     return res.status(500).json({
       success: false,
@@ -311,7 +312,7 @@ export const resetPassword = async (req: Request, res: Response) => {
     });
   }
   catch (error) {
-    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in reset password -> ${req.ip}\n`)
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in reset password -> ${req.ip} - Error ${error}\n`)
 
     return res.status(500).json({
       success: false,
@@ -361,7 +362,7 @@ export const resendVerification = async (req: Request, res: Response) => {
     });
   }
   catch (error) {
-    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in reset password -> ${req.ip}\n`)
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in reset password -> ${req.ip} - Error ${error}\n`)
 
     return res.status(500).json({
       success: false,

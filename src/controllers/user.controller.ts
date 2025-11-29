@@ -24,7 +24,7 @@ export const profile = async (req: Request, res: Response) => {
     });
   }
   catch (error) {
-    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in getting profile -> ${req.ip}\n`);
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in getting profile -> ${req.ip} - Error ${error}\n`);
 
     return res.status(500).json({
       success: false,
@@ -81,7 +81,7 @@ export const updateProfile = async (req: Request, res: Response) => {
     });
   }
   catch (error) {
-    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in updating profile -> ${req.ip}\n`);
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in updating profile -> ${req.ip} - Error ${error}\n`);
 
     return res.status(500).json({
       success: false,
@@ -120,7 +120,7 @@ export const changePassword = async (req: Request, res: Response) => {
     });
   }
   catch (error) {
-    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in changing password -> ${req.ip}\n`);
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in changing password -> ${req.ip} - Error ${error}\n`);
 
     return res.status(500).json({
       success: false,
@@ -164,7 +164,7 @@ export const removeAccount = async (req: Request, res: Response) => {
     });
   }
   catch (error) {
-    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in removing account -> ${req.ip}\n`);
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in removing account -> ${req.ip} - Error ${error}\n`);
 
     return res.status(500).json({
       success: false,
@@ -190,7 +190,7 @@ export const address = async (req: Request, res: Response) => {
     });
   }
   catch (error) {
-    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in getting addresses -> ${req.ip}\n`);
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in getting addresses -> ${req.ip} - Error ${error}\n`);
 
     return res.status(500).json({
       success: false,
@@ -254,7 +254,7 @@ export const addAddress = async (req: Request, res: Response) => {
     });
   }
   catch (error) {
-    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in adding addresses -> ${req.ip}\n`);
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in adding addresses -> ${req.ip} - Error ${error}\n`);
 
     return res.status(500).json({
       success: false,
@@ -278,31 +278,19 @@ export const updateAddress = async (req: Request, res: Response) => {
     } = req.body;
 
     let filter: any = {};
-    if (contactPerson) filter.contactPerson = contactPerson;
-    if (contactnumber) filter.contactnumber = contactnumber;
-    if (addressLineOne) filter.addressLineOne = addressLineOne;
-    if (addressLineTwo) filter.addressLineTwo = addressLineTwo;
-    if (pincode) filter.pincode = pincode;
-    if (locality) filter.locality = locality;
-    if (city) filter.city = city;
-    if (state) filter.state = state;
-    if (country) filter.country = country;
+    if (contactPerson) filter["address.contactPerson"] = contactPerson;
+    if (contactnumber) filter["address.contactnumber"] = contactnumber;
+    if (addressLineOne) filter["address.addressLineOne"] = addressLineOne;
+    if (addressLineTwo) filter["address.addressLineTwo"] = addressLineTwo;
+    if (pincode) filter["address.pincode"] = pincode;
+    if (locality) filter["address.locality"] = locality;
+    if (city) filter["address.city"] = city;
+    if (state) filter["address.state"] = state;
+    if (country) filter["address.country"] = country;
 
     const updateAddress = await User.findByIdAndUpdate(
       (req as any).user.id,
-      {
-        address: {
-          contactPerson,
-          contactnumber,
-          addressLineOne,
-          addressLineTwo,
-          pincode,
-          locality,
-          city,
-          state,
-          country
-        }
-      }
+      filter
     );
 
     if (!updateAddress) {
@@ -318,7 +306,7 @@ export const updateAddress = async (req: Request, res: Response) => {
     });
   }
   catch (error) {
-    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in updating addresse -> ${req.ip}\n`);
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in updating addresse -> ${req.ip} - Error ${error}\n`);
 
     return res.status(500).json({
       success: false,
@@ -346,7 +334,7 @@ export const wishlist = async (req: Request, res: Response) => {
     });
   }
   catch(error) {
-    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in getting wishlist -> ${req.ip}\n`);
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in getting wishlist -> ${req.ip} - Error ${error}\n`);
 
     return res.status(500).json({
       success: false,
@@ -383,7 +371,7 @@ export const addToWishlist = async (req: Request, res: Response) => {
     });
   }
   catch(error) {
-    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in adding item to wishlist -> ${req.ip}\n`);
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in adding item to wishlist -> ${req.ip} - Error ${error}\n`);
 
     return res.status(500).json({
       success: false,
@@ -422,7 +410,7 @@ export const removeFromWishlist = async (req: Request, res: Response) => {
     });
   }
   catch(error) {
-    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in removing item to wishlist -> ${req.ip}\n`);
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in removing item to wishlist -> ${req.ip} - Error ${error}\n`);
 
     return res.status(500).json({
       success: false,

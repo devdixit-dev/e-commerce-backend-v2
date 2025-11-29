@@ -7,7 +7,7 @@ export const authInitSchema = Joi.object({
     "string:max": "Name should not over exceed 40 characters"
   }),
   email: Joi.string().required().messages({
-    "number.empty": "Mobile number is required"
+    "number.empty": "Email is required"
   }),
   password: Joi.string().min(8).required().messages({
     "password:empty": "Password is required",
@@ -17,7 +17,7 @@ export const authInitSchema = Joi.object({
 
 export const signInSchema = Joi.object({
   email: Joi.string().required().messages({
-    "number.empty": "Mobile number is required"
+    "string.empty": "Email is required"
   }),
   password: Joi.string().min(8).required().messages({
     "password:empty": "Password is required",

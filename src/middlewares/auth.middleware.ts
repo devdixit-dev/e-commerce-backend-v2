@@ -6,7 +6,12 @@ import { verifyJwt } from '../services/jwt.service';
 const auth = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const token = req.cookies.a_token;
-    if(!token) return null;
+    if(!token) {
+      return res.status(401).json({
+        success: false,
+        message: "Token not found or invalid"
+      });
+    }
 
     const verified = verifyJwt(token);
     if(!verified) {
