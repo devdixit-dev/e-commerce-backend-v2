@@ -20,6 +20,11 @@ const userSchema = new mongoose.Schema({
   contactNumber: {
     type: String
   },
+  role: {
+    type: String,
+    enum: ['Admin', 'Customer'],
+    default: 'Customer'
+  },
   password: {
     type: String,
     minLength: [8, 'password should be at least 8 characters'],

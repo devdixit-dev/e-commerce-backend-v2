@@ -43,6 +43,7 @@ export const updateProfile = async (req: Request, res: Response) => {
     } = req.body;
 
     let updatePayload: any = {};
+    if(req?.file) updatePayload.avatar = req.file;
     if (contactNumber) updatePayload.contactNumber = contactNumber;
     if (dob) updatePayload.dob = dob;
     if (gender) updatePayload.gender = gender;
