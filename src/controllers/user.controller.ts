@@ -42,11 +42,13 @@ export const updateProfile = async (req: Request, res: Response) => {
       alternateContactNumber
     } = req.body;
 
+    const avatar = req.file;
+
     let updatePayload: any = {};
-    if(req?.file) updatePayload.avatar = req.file;
+    if (avatar) updatePayload.avatar = `http://localhost:${process.env.PORT}/uploads/${req.file?.filename}`;
     if (contactNumber) updatePayload.contactNumber = contactNumber;
     if (dob) updatePayload.dob = dob;
-    if (gender) updatePayload.gender = gender;
+    if (gender) updatePayload.gender = gender;  
     if (alternateContactNumber) updatePayload.alternateContactNumber = alternateContactNumber;
 
     const update = await User.findByIdAndUpdate(
@@ -62,19 +64,6 @@ export const updateProfile = async (req: Request, res: Response) => {
         message: "User not found"
       });
     }
-
-    await emailQueue.add(`email:${update.email}`,
-      {
-        to: update.email,
-        subject: `Details Updated`,
-        text: `Hello, ${update.name} Your details has been updated successfully.`
-      },
-      {
-        removeOnComplete: true,
-        removeOnFail: false,
-        attempts: 3
-      }
-    ).catch(() => { });
 
     return res.status(200).json({
       success: true,
@@ -317,11 +306,11 @@ export const updateAddress = async (req: Request, res: Response) => {
 }
 
 export const wishlist = async (req: Request, res: Response) => {
-  try{
+  try {
     const user = await User.findById((req as any).user.id)
-    .lean();
+      .lean();
 
-    if(!user) {
+    if (!user) {
       return res.status(404).json({
         success: false,
         message: "User not found"
@@ -334,7 +323,7 @@ export const wishlist = async (req: Request, res: Response) => {
       data: user.wishlist || []
     });
   }
-  catch(error) {
+  catch (error) {
     makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in getting wishlist -> ${req.ip} - Error ${error}\n`);
 
     return res.status(500).json({
@@ -345,9 +334,9 @@ export const wishlist = async (req: Request, res: Response) => {
 }
 
 export const addToWishlist = async (req: Request, res: Response) => {
-  try{
+  try {
     const id = req.params.productId;
-    if(!id) {
+    if (!id) {
       return res.status(400).json({
         success: false,
         message: "Product ID is required"
@@ -359,7 +348,7 @@ export const addToWishlist = async (req: Request, res: Response) => {
       { $push: { wishlist: id } }
     );
 
-    if(!user) {
+    if (!user) {
       return res.status(404).json({
         success: false,
         message: "User not found"
@@ -371,7 +360,7 @@ export const addToWishlist = async (req: Request, res: Response) => {
       message: "Product added to wishlist"
     });
   }
-  catch(error) {
+  catch (error) {
     makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in adding item to wishlist -> ${req.ip} - Error ${error}\n`);
 
     return res.status(500).json({
@@ -382,9 +371,9 @@ export const addToWishlist = async (req: Request, res: Response) => {
 }
 
 export const removeFromWishlist = async (req: Request, res: Response) => {
-  try{
+  try {
     const id = req.params.productId;
-    if(!id) {
+    if (!id) {
       return res.status(400).json({
         success: false,
         message: "Product ID is required"
@@ -398,7 +387,7 @@ export const removeFromWishlist = async (req: Request, res: Response) => {
       }
     );
 
-    if(!user) {
+    if (!user) {
       return res.status(404).json({
         success: false,
         message: "User not found"
@@ -410,7 +399,7 @@ export const removeFromWishlist = async (req: Request, res: Response) => {
       message: "Product removed from wishlist"
     });
   }
-  catch(error) {
+  catch (error) {
     makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in removing item to wishlist -> ${req.ip} - Error ${error}\n`);
 
     return res.status(500).json({
