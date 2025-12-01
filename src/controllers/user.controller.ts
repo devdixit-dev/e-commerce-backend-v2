@@ -45,7 +45,7 @@ export const updateProfile = async (req: Request, res: Response) => {
     const avatar = req.file;
 
     let updatePayload: any = {};
-    if (avatar) updatePayload.avatar = `http://localhost:${process.env.PORT}/uploads/${req.file?.filename}`;
+    if (avatar) updatePayload.avatar = `http://localhost:${process.env.PORT}/uploads/${(req as any).user.id}/${req.file?.filename}`;
     if (contactNumber) updatePayload.contactNumber = contactNumber;
     if (dob) updatePayload.dob = dob;
     if (gender) updatePayload.gender = gender;  
