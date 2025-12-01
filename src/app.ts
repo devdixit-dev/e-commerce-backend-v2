@@ -3,9 +3,10 @@ import cookieParser from 'cookie-parser';
 import path from 'path';
 
 import authRouter from './routes/auth.route';
-import UserRouter from './routes/user.route';
 import auth from './middlewares/auth.middleware';
 import { makeLogFile } from './utils/logger';
+import productRouter from './routes/product.route';
+import userRouter from './routes/user.route';
 
 const createServer = async () => {
   const app = express();
@@ -29,7 +30,8 @@ const createServer = async () => {
   });
 
   app.use('/api/auth', authRouter);
-  app.use('/api/user', auth, UserRouter);
+  app.use('/api/user', auth, userRouter);
+  app.use('/api/products', productRouter)
 
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     console.error("Unhandled error:", err);

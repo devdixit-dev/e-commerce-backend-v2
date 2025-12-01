@@ -1,28 +1,28 @@
 import express from 'express';
-import { products } from '../controllers/product.controller';
+import { addProduct, productAddImages, productById, productFeatured, productRemoveImages, products, productsByFilter, productsByQueries, productTrending, removeProductById, updateProductById } from '../controllers/product.controller';
 
-const productRoute = express.Router();
+const productRouter = express.Router();
 
-productRoute.get('/products', products);
+productRouter.get('/', products);
 
-productRoute.get('/product/:productId')
+productRouter.get('/:productId', productById);
 
-productRoute.post('/product')
+productRouter.post('/add', addProduct);
 
-productRoute.put('/product/:productId')
+productRouter.put('/update/:productId', updateProductById);
 
-productRoute.delete('/product/:productId')
+productRouter.delete('/remove/:productId', removeProductById);
 
-productRoute.get('/product/search/:query')
+productRouter.get('/search/:query', productsByQueries);
 
-productRoute.get('/product/filter')
+productRouter.get('/filter', productsByFilter);
 
-productRoute.post('/product/:productId/images')
+productRouter.post('/:productId/images', productAddImages);
 
-productRoute.delete('/product/:productId/images/:imageId')
+productRouter.delete('/:productId/images/:imageId', productRemoveImages);
 
-productRoute.post('/product/featured')
+productRouter.post('/featured', productFeatured);
 
-productRoute.post('/product/trending')
+productRouter.post('/trending', productTrending);
 
-export default productRoute;
+export default productRouter;

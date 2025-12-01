@@ -4,26 +4,26 @@ import { Validate } from "../middlewares/validation.middleware";
 import { updateDataSchema } from "../validators/user.validator";
 import upload from "../middlewares/multer.middleware";
 
-const UserRouter = Router();
+const userRouter = Router();
 
-UserRouter.get('/profile', profile);
+userRouter.get('/profile', profile);
 
-UserRouter.put('/profile', Validate(updateDataSchema), upload.single('avatar'), updateProfile);
+userRouter.put('/profile', Validate(updateDataSchema), upload.single('avatar'), updateProfile);
 
-UserRouter.patch('/change-password', changePassword);
+userRouter.patch('/change-password', changePassword);
 
-UserRouter.delete('/account', removeAccount);
+userRouter.delete('/account', removeAccount);
 
-UserRouter.get('/address', address);
+userRouter.get('/address', address);
 
-UserRouter.post('/address', addAddress);
+userRouter.post('/address', addAddress);
 
-UserRouter.put('/address', updateAddress);
+userRouter.put('/address', updateAddress);
 
-UserRouter.get('/wishlist', wishlist);
+userRouter.get('/wishlist', wishlist);
 
-UserRouter.post('/wishlist/:productId', addToWishlist);
+userRouter.post('/wishlist/:productId', addToWishlist);
 
-UserRouter.delete('/wishlist/:productId', removeFromWishlist);
+userRouter.delete('/wishlist/:productId', removeFromWishlist);
 
-export default UserRouter;
+export default userRouter;

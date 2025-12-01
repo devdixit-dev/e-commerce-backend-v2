@@ -22,10 +22,10 @@ const productSchema = new mongoose.Schema({
     index: true,
     required: true,
   },
-  productTags: {
+  productTags: [{
     type: String,
     index: true
-  },
+  }],
   productCategory: {
     type: String,
     index: true,
@@ -56,9 +56,6 @@ const productSchema = new mongoose.Schema({
     default: 0,
     min: 0,
     required: true
-  },
-  productReviewCount: {
-    type: Number
   },
   productReviews: [{
     type: mongoose.Schema.Types.ObjectId,
