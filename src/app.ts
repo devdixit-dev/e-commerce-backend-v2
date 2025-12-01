@@ -5,6 +5,7 @@ import path from 'path';
 import authRouter from './routes/auth.route';
 import UserRouter from './routes/user.route';
 import auth from './middlewares/auth.middleware';
+import { makeLogFile } from './utils/logger';
 
 const createServer = async () => {
   const app = express();
@@ -22,6 +23,7 @@ const createServer = async () => {
   });
 
   app.use((req, _, next) => {
+    makeLogFile("track.log", `[${Date.now()}] - ${req.url} | ${req.method} | ${req.ip} | ${req.headers["user-agent"]}`)
     console.log(`${req.url} - ${req.method} - ${req.ip}`);
     next();
   });
