@@ -3,7 +3,7 @@ import cookieParser from 'cookie-parser';
 import path from 'path';
 
 import authRouter from './routes/auth.route';
-import auth from './middlewares/auth.middleware';
+import {auth} from './middlewares/auth.middleware';
 import { makeLogFile } from './utils/logger';
 import productRouter from './routes/product.route';
 import userRouter from './routes/user.route';
@@ -24,7 +24,7 @@ const createServer = async () => {
   });
 
   app.use((req, _, next) => {
-    makeLogFile("track.log", `[${Date.now()}] - ${req.url} | ${req.method} | ${req.ip} | ${req.headers["user-agent"]}`)
+    makeLogFile("track.log", `\n[${Date.now()}] - ${req.url} | ${req.method} | ${req.ip} | ${req.headers["user-agent"]}\n`)
     console.log(`${req.url} - ${req.method} - ${req.ip}`);
     next();
   });

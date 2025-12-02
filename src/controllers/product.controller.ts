@@ -4,19 +4,19 @@ import RedisClient from "../config/redis.config";
 import Product from "../models/product.model";
 
 export const products = async (req: Request, res: Response) => {
-  try{
+  try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
     const skip = (page - 1) * limit
 
     const filter: any = { isActive: true };
-    if(req.query.category) filter.category = req.query.category;
-    if(req.query.brand) filter.brand = req.query.brand;
+    if (req.query.category) filter.category = req.query.category;
+    if (req.query.brand) filter.brand = req.query.brand;
 
     const cacheKey = `home:products:${JSON.stringify(filter)}:${page}:${limit}`;
     const cache = await RedisClient.get(cacheKey);
 
-    if(cache) {
+    if (cache) {
       return res.status(200).json({
         success: true,
         message: 'Products fetched',
@@ -25,12 +25,12 @@ export const products = async (req: Request, res: Response) => {
     }
 
     const products = await Product.find(filter)
-    .select('productName productSlug productBrand productPrice productTags productCategory productDesc productRatings productImages productOwnedBy productStock')
-    .skip(skip)
-    .limit(limit)
-    .lean();
+      .select('productName productSlug productBrand productPrice productTags productCategory productDesc productRatings productImages productOwnedBy productStock')
+      .skip(skip)
+      .limit(limit)
+      .lean();
 
-    if(!products) {
+    if (!products) {
       return res.status(404).json({
         success: false,
         message: "Product not found"
@@ -48,7 +48,7 @@ export const products = async (req: Request, res: Response) => {
       limit
     });
   }
-  catch(error) {
+  catch (error) {
     makeLogFile("error.log", `[${Date.now()}] - ${req.ip} | ${error}`);
     console.error(`Get products error: ${error}`);
 
@@ -59,22 +59,82 @@ export const products = async (req: Request, res: Response) => {
   }
 }
 
-export const productById = () => {}
+export const productById = async (req: Request, res: Response) => {
+  try {
+    const id = req.params.productId;
+    if (!id) {
+      return res.status(404).json({
+        success: true,
+        message: 'Product ID is required'
+      });
+    }
 
-export const addProduct = () => {}
+    const cache = await RedisClient.get(`product:${id}`);
+    if (cache) {
+      return res.status(200).json({
+        success: true,
+        cache: true,
+        data: JSON.parse(cache)
+      });
+    }
 
-export const updateProductById = () => {}
+    const product = await Product.findById(id).select(
+      'productName productSlug productBrand productPrice productTags productCategory productDesc productRatings productImages productOwnedBy productStock'
+    ).lean();
 
-export const removeProductById = () => {}
+    if (!product) {
+      return res.status(404).json({
+        success: true,
+        message: 'Product not found'
+      });
+    }
 
-export const productsByQueries = () => {}
+    await RedisClient.set(`product:${product._id}`, JSON.stringify(product), "EX", 180);
 
-export const productsByFilter = () => {}
+    return res.status(200).json({
+      success: true,
+      cache: false,
+      data: product
+    });
+  }
+  catch (error) {
+    makeLogFile("error.log", `[${Date.now()}] - ${req.ip} | ${error}`);
+    console.error(`Get product by ID error: ${error}`);
 
-export const productAddImages = () => {}
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+}
 
-export const productRemoveImages = () => {}
+export const addProduct = async (req: Request, res: Response) => {
+  try {
+    
+  }
+  catch (error) {
+    makeLogFile("error.log", `[${Date.now()}] - ${req.ip} | ${error}`);
+    console.error(`Add products error: ${error}`);
 
-export const productFeatured = () => {}
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+}
 
-export const productTrending = () => {}
+export const updateProductById = () => { }
+
+export const removeProductById = () => { }
+
+export const productsByQueries = () => { }
+
+export const productsByFilter = () => { }
+
+export const productAddImages = () => { }
+
+export const productRemoveImages = () => { }
+
+export const productFeatured = () => { }
+
+export const productTrending = () => { }

@@ -99,6 +99,7 @@ export const signIn = async (req: Request, res: Response) => {
       id: user._id.toString(),
       name: user.name,
       email: user.email,
+      role: user.role,
       verified: user.isVerified
     }
 

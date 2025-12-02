@@ -95,8 +95,7 @@ const userSchema = new mongoose.Schema({
   },
   failedLoginAttempts: {
     type: Number,
-    default: 0,
-    maxLength: 3
+    default: 0
   }
 }, { timestamps: true });
 
