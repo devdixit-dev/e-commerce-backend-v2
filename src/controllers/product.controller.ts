@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import { makeLogFile } from "../utils/logger";
 import RedisClient from "../config/redis.config";
 import Product from "../models/product.model";
-import User from "../models/user.model";
 
 export const products = async (req: Request, res: Response) => {
   try {
@@ -86,7 +85,7 @@ export const productById = async (req: Request, res: Response) => {
       'productName productSlug productBrand productPrice productTags productCategory productDesc productRatings productImages productOwnedBy productStock'
     ).lean();
 
-    if (!product) {
+    if (!product || !product.isActive) {
       return res.status(404).json({
         success: true,
         message: 'Product not found'
@@ -136,10 +135,10 @@ export const addProduct = async (req: Request, res: Response) => {
     if (productStock) filter.productStock = productStock;
 
     const product = await Product.findOne(
-      { productName }, { productOwnedBy: (req as any).user.id }
-    );
+      { productName, productOwnedBy: (req as any).user.id }
+    ).lean()
 
-    if (!product) {
+    if (!product || !product.isActive) {
       return res.status(404).json({
         success: false,
         message: "Product not found"
@@ -168,11 +167,138 @@ export const addProduct = async (req: Request, res: Response) => {
   }
 }
 
-export const updateProductById = () => { }
+export const updateProductById = async (req: Request, res: Response) => {
+  try {
+    const id = req.params.productId;
+    if (!id) {
+      return res.status(200).json({
+        success: false,
+        message: 'Product ID is required'
+      });
+    }
 
-export const removeProductById = () => { }
+    const {
+      productName,
+      productSlug,
+      productBrand,
+      productPrice,
+      productTags,
+      productCategory,
+      productDesc,
+      productStock
+    } = req.body;
 
-export const productsByQueries = () => { }
+    const filter: any = {};
+    if (productName) filter.productName = productName;
+    if (productSlug) filter.productSlug = productSlug;
+    if (productBrand) filter.productBrand = productBrand;
+    if (productPrice) filter.productPrice = productPrice;
+    if (productTags) filter.productTags = productTags;
+    if (productCategory) filter.productCategory = productCategory;
+    if (productDesc) filter.productDesc = productDesc;
+    if (productStock) filter.productStock = productStock;
+
+    const product = await Product.findById(
+      id,
+      filter
+    );
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: product
+    });
+  }
+  catch (error) {
+    makeLogFile("error.log", `[${Date.now()}] - ${req.ip} | ${error}`);
+    console.error(`update products error: ${error}`);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+}
+
+export const removeProductById = async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id;
+
+    const product = await Product.findOneAndUpdate(
+      { _id: id, productOwnedBy: (req as any).user.id, isActive: true },
+      {
+        $set: {
+          isActive: false, deletedAt: new Date()
+        }
+      }
+    ).lean();
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Product removed"
+    });
+  }
+  catch (error) {
+    makeLogFile("error.log", `[${Date.now()}] - ${req.ip} | ${error}`);
+    console.error(`remove products error: ${error}`);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+}
+
+export const productsByQueries = async (req: Request, res: Response) => {
+  try{
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+    
+    const filter: any = { isActive: true };
+    filter.productBrand = req.query.brand;
+    filter.productCategory = req.query.category;
+
+    const product = await Product.find(filter)
+    .limit(limit)
+    .skip(skip)
+    .lean()
+
+    if(!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found or invalid queries"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: products
+    });
+  }
+  catch(error) {
+    makeLogFile("error.log", `[${Date.now()}] - ${req.ip} | ${error}`);
+    console.error(`products by queries error: ${error}`);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+}
 
 export const productsByFilter = () => { }
 
