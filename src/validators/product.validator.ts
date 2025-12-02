@@ -6,6 +6,11 @@ export const addProductSchema = Joi.object({
     "string:min": "Product name should have at least 4 characters",
     "string:max": "Product name should not exceed over 60 characters",
   }),
+  productSlug: Joi.string().required().min(4).max(40).messages({
+    "string:empty": "Product slug name is required",
+    "string:min": "Product slug should at least 4 characters",
+    "string:max": "Product slug should not exceed over 40 characters"
+  }),
   productBrand: Joi.string().required().min(4).max(16).messages({
     "string:empty": "Product brand is required",
     "string:min": "Product brand should at least 4 characters",
@@ -29,10 +34,6 @@ export const addProductSchema = Joi.object({
     "string:empty": "Product description is required",
     "string:min": "Product description should at least 4 characters",
     "string:max": "Product description should at least 80 characters",
-  }),
-  productRatings: Joi.string().min(1).max(5).messages({
-    "string:min": "Product rating should at least 1 characters",
-    "string:max": "Product rating should at least 5 characters",
   }),
   productStock: Joi.number().min(1).max(200).required().messages({
     "string:empty": "Product stock is required",

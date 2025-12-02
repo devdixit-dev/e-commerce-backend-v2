@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { makeLogFile } from "../utils/logger";
 import RedisClient from "../config/redis.config";
 import Product from "../models/product.model";
+import User from "../models/user.model";
 
 export const products = async (req: Request, res: Response) => {
   try {
@@ -19,9 +20,11 @@ export const products = async (req: Request, res: Response) => {
     if (cache) {
       return res.status(200).json({
         success: true,
-        message: 'Products fetched',
-        data: JSON.parse(cache)
-      })
+        cache: true,
+        data: JSON.parse(cache),
+        page,
+        limit
+      });
     }
 
     const products = await Product.find(filter)
@@ -43,6 +46,7 @@ export const products = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       success: true,
+      cache: false,
       data: products,
       page,
       limit
@@ -110,7 +114,48 @@ export const productById = async (req: Request, res: Response) => {
 
 export const addProduct = async (req: Request, res: Response) => {
   try {
-    
+    const {
+      productName,
+      productSlug,
+      productBrand,
+      productPrice,
+      productTags,
+      productCategory,
+      productDesc,
+      productStock
+    } = req.body;
+
+    const filter: any = {}
+    if (productName) filter.productName = productName;
+    if (productSlug) filter.productSlug = productSlug;
+    if (productBrand) filter.productBrand = productBrand;
+    if (productPrice) filter.productPrice = productPrice;
+    if (productTags) filter.productTags = productTags;
+    if (productCategory) filter.productCategory = productCategory;
+    if (productDesc) filter.productDesc = productDesc;
+    if (productStock) filter.productStock = productStock;
+
+    const product = await Product.findOne(
+      { productName }, { productOwnedBy: (req as any).user.id }
+    );
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found"
+      });
+    }
+
+    await Product.create({
+      productName, productBrand, productPrice, productTags,
+      productCategory, productDesc, productStock,
+      productOwnedBy: (req as any).user.id
+    });
+
+    return res.status(201).json({
+      success: true,
+      data: product
+    });
   }
   catch (error) {
     makeLogFile("error.log", `[${Date.now()}] - ${req.ip} | ${error}`);

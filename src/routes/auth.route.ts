@@ -3,7 +3,7 @@ import { Router } from "express";
 import { authInit, forgotPassword, resendVerification, resetPassword, signIn, signOut, verifyEmail } from "../controllers/auth.controller";
 import { Validate } from "../middlewares/validation.middleware";
 import { authInitSchema, signInSchema } from "../validators/auth.validator";
-import auth from "../middlewares/auth.middleware";
+import {auth} from "../middlewares/auth.middleware";
 import customRateLimiter from "../middlewares/rateLimiter.middleware";
 
 const authRouter = Router();
