@@ -8,7 +8,6 @@ const productSchema = new mongoose.Schema({
   },
   productSlug: {
     type: String,
-    required: true,
     index: true,
     unique: true
   },
@@ -18,7 +17,7 @@ const productSchema = new mongoose.Schema({
     index: true
   },
   productPrice: {
-    type: String,
+    type: Number,
     index: true,
     required: true,
   },
@@ -38,7 +37,7 @@ const productSchema = new mongoose.Schema({
     maxLength: [200, 'Product description characters should not exceed limit of 200']
   },
   productRatings: {
-    type: String,
+    type: Number,
     default: 0,
     index: true
   },
@@ -59,7 +58,7 @@ const productSchema = new mongoose.Schema({
   },
   productReviews: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Users'
+    ref: 'User'
   }],
   productViews: {
     type: Number,

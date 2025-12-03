@@ -52,7 +52,7 @@ export const products = async (req: Request, res: Response) => {
     });
   }
   catch (error) {
-    makeLogFile("error.log", `[${Date.now()}] - ${req.ip} | ${error}`);
+    makeLogFile("error.log", `\n[${Date.now()}] - ${req.ip} | ${error}\n`);
     console.error(`Get products error: ${error}`);
 
     return res.status(500).json({
@@ -101,7 +101,7 @@ export const productById = async (req: Request, res: Response) => {
     });
   }
   catch (error) {
-    makeLogFile("error.log", `[${Date.now()}] - ${req.ip} | ${error}`);
+    makeLogFile("error.log", `\n[${Date.now()}] - ${req.ip} | ${error}\n`);
     console.error(`Get product by ID error: ${error}`);
 
     return res.status(500).json({
@@ -115,7 +115,6 @@ export const addProduct = async (req: Request, res: Response) => {
   try {
     const {
       productName,
-      productSlug,
       productBrand,
       productPrice,
       productTags,
@@ -126,7 +125,6 @@ export const addProduct = async (req: Request, res: Response) => {
 
     const filter: any = {}
     if (productName) filter.productName = productName;
-    if (productSlug) filter.productSlug = productSlug;
     if (productBrand) filter.productBrand = productBrand;
     if (productPrice) filter.productPrice = productPrice;
     if (productTags) filter.productTags = productTags;
@@ -138,14 +136,14 @@ export const addProduct = async (req: Request, res: Response) => {
       { productName, productOwnedBy: (req as any).user.id }
     ).lean()
 
-    if (!product || !product.isActive) {
+    if (product) {
       return res.status(404).json({
         success: false,
-        message: "Product not found"
+        message: "Product is already exist"
       });
     }
 
-    await Product.create({
+    const newProduct = await Product.create({
       productName, productBrand, productPrice, productTags,
       productCategory, productDesc, productStock,
       productOwnedBy: (req as any).user.id
@@ -153,11 +151,11 @@ export const addProduct = async (req: Request, res: Response) => {
 
     return res.status(201).json({
       success: true,
-      data: product
+      data: newProduct
     });
   }
   catch (error) {
-    makeLogFile("error.log", `[${Date.now()}] - ${req.ip} | ${error}`);
+    makeLogFile("error.log", `\n[${Date.now()}] - ${req.ip} | ${error}\n`);
     console.error(`Add products error: ${error}`);
 
     return res.status(500).json({
@@ -188,7 +186,7 @@ export const updateProductById = async (req: Request, res: Response) => {
       productStock
     } = req.body;
 
-    const filter: any = {};
+    const filter: any = { isActive: true };
     if (productName) filter.productName = productName;
     if (productSlug) filter.productSlug = productSlug;
     if (productBrand) filter.productBrand = productBrand;
@@ -198,10 +196,11 @@ export const updateProductById = async (req: Request, res: Response) => {
     if (productDesc) filter.productDesc = productDesc;
     if (productStock) filter.productStock = productStock;
 
-    const product = await Product.findById(
+    const product = await Product.findByIdAndUpdate(
       id,
-      filter
-    );
+      filter,
+      { new: true }
+    ).select(filter)
 
     if (!product) {
       return res.status(404).json({
@@ -216,7 +215,7 @@ export const updateProductById = async (req: Request, res: Response) => {
     });
   }
   catch (error) {
-    makeLogFile("error.log", `[${Date.now()}] - ${req.ip} | ${error}`);
+    makeLogFile("error.log", `\n[${Date.now()}] - ${req.ip} | ${error}\n`);
     console.error(`update products error: ${error}`);
 
     return res.status(500).json({
@@ -228,13 +227,13 @@ export const updateProductById = async (req: Request, res: Response) => {
 
 export const removeProductById = async (req: Request, res: Response) => {
   try {
-    const id = req.params.id;
+    const id = req.params.productId;
 
     const product = await Product.findOneAndUpdate(
       { _id: id, productOwnedBy: (req as any).user.id, isActive: true },
       {
         $set: {
-          isActive: false, deletedAt: new Date()
+          isActive: false
         }
       }
     ).lean();
@@ -252,7 +251,7 @@ export const removeProductById = async (req: Request, res: Response) => {
     });
   }
   catch (error) {
-    makeLogFile("error.log", `[${Date.now()}] - ${req.ip} | ${error}`);
+    makeLogFile("error.log", `\n[${Date.now()}] - ${req.ip} | ${error}\n`);
     console.error(`remove products error: ${error}`);
 
     return res.status(500).json({
@@ -263,34 +262,42 @@ export const removeProductById = async (req: Request, res: Response) => {
 }
 
 export const productsByQueries = async (req: Request, res: Response) => {
-  try{
+  try {
+    const searchQuery = req.params.query;
+
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
-    
-    const filter: any = { isActive: true };
-    filter.productBrand = req.query.brand;
-    filter.productCategory = req.query.category;
+
+    const filter: any = {
+      isActive: true,
+      $or: [
+        { productName: { $regex: searchQuery, $options: "i" } },
+        { productBrand: { $regex: searchQuery, $options: "i" } },
+        { productCategory: { $regex: searchQuery, $options: "i" } },
+        { productTags: { $regex: searchQuery, $options: "i" } }
+      ]
+    };
 
     const product = await Product.find(filter)
-    .limit(limit)
-    .skip(skip)
-    .lean()
+      .limit(limit)
+      .skip(skip)
+      .lean()
 
-    if(!product) {
+    if (!product) {
       return res.status(404).json({
         success: false,
-        message: "Product not found or invalid queries"
+        message: "Product not found or invalid query"
       });
     }
 
     return res.status(200).json({
       success: true,
-      data: products
+      data: product
     });
   }
-  catch(error) {
-    makeLogFile("error.log", `[${Date.now()}] - ${req.ip} | ${error}`);
+  catch (error) {
+    makeLogFile("error.log", `\n[${Date.now()}] - ${req.ip} | ${error}\n`);
     console.error(`products by queries error: ${error}`);
 
     return res.status(500).json({
@@ -300,9 +307,63 @@ export const productsByQueries = async (req: Request, res: Response) => {
   }
 }
 
-export const productsByFilter = () => { }
+export const productsByFilter = async (req: Request, res: Response) => {
+  try {
+    const {
+      productBrand,
+      productPrice,
+      productCategory,
+      productStock
+    } = req.body;
 
-export const productAddImages = () => { }
+    const filter: any = { isActive: true };
+
+    if (productBrand) filter.productBrand = productBrand;
+    if (productCategory) filter.productCategory = productCategory;
+
+    if (productPrice) filter.productPrice = Number(productPrice);
+    if (productStock) filter.productStock = Number(productStock);
+
+    const products = await Product.find(filter).lean();
+    if (!products) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found with this filter"
+      });
+    }
+
+    return res.status(200).json({
+      successs: true,
+      data: products
+    });
+  }
+  catch (error) {
+    makeLogFile("error.log", `[${Date.now()}] - ${req.ip} | ${error}`);
+    console.error(`products by filter error: ${error}`);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+}
+
+export const productAddImages = async (req: Request, res: Response) => {
+  try {
+    const array = req.files;
+
+    console.log(array)
+  }
+  catch (error) {
+    makeLogFile("error.log", `[${Date.now()}] - ${req.ip} | ${error}`);
+    console.error(`add images for product error: ${error}`);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+}
 
 export const productRemoveImages = () => { }
 

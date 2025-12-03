@@ -3,6 +3,7 @@ import { addProduct, productAddImages, productById, productFeatured, productRemo
 import { Validate } from '../middlewares/validation.middleware';
 import { addProductSchema } from '../validators/product.validator';
 import { isAdmin } from '../middlewares/auth.middleware';
+import upload from '../middlewares/multer.middleware';
 
 const productRouter = express.Router();
 
@@ -12,15 +13,15 @@ productRouter.get('/:productId', productById);
 
 productRouter.post('/add', Validate(addProductSchema), isAdmin, addProduct);
 
-productRouter.put('/update/:productId', updateProductById);
+productRouter.put('/update/:productId', isAdmin, updateProductById);
 
-productRouter.delete('/remove/:productId', removeProductById);
+productRouter.delete('/remove/:productId', isAdmin, removeProductById);
 
-productRouter.get('/search/:query', productsByQueries);
+// productRouter.get('/search/:query', productsByQueries);
 
-productRouter.get('/filter', productsByFilter);
+// productRouter.get('/filter', productsByFilter);
 
-productRouter.post('/:productId/images', productAddImages);
+productRouter.post('/:productId/images', upload.array('productImages', 5), productAddImages);
 
 productRouter.delete('/:productId/images/:imageId', productRemoveImages);
 
