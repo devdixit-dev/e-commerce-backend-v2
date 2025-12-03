@@ -111,6 +111,45 @@ export const productById = async (req: Request, res: Response) => {
   }
 }
 
+export const productBySlug = async (req: Request, res: Response) => {
+  try{
+    const slug = req.params.slug;
+    if(!slug) {
+      return res.status(404).json({
+        success: false,
+        message: 'Slug is required'
+      });
+    }
+
+    const product = await Product.findOne({
+      productSlug: slug, isActive: true
+    })
+    .select('productName productBrand productPrice productTags productCategory productDesc productRatings productImages productOwnedBy productStock')
+    .lean()
+
+    if(!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: product
+    });
+  }
+  catch(error) {
+    makeLogFile("error.log", `\n[${Date.now()}] - ${req.ip} | ${error}\n`);
+    console.error(`Get product by slug error: ${error}`);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+}
+
 export const addProduct = async (req: Request, res: Response) => {
   try {
     const {
@@ -253,93 +292,6 @@ export const removeProductById = async (req: Request, res: Response) => {
   catch (error) {
     makeLogFile("error.log", `\n[${Date.now()}] - ${req.ip} | ${error}\n`);
     console.error(`remove products error: ${error}`);
-
-    return res.status(500).json({
-      success: false,
-      message: 'Internal server error'
-    });
-  }
-}
-
-export const productsByQueries = async (req: Request, res: Response) => {
-  try {
-    const searchQuery = req.params.query;
-
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const skip = (page - 1) * limit;
-
-    const filter: any = {
-      isActive: true,
-      $or: [
-        { productName: { $regex: searchQuery, $options: "i" } },
-        { productBrand: { $regex: searchQuery, $options: "i" } },
-        { productCategory: { $regex: searchQuery, $options: "i" } },
-        { productTags: { $regex: searchQuery, $options: "i" } }
-      ]
-    };
-
-    const product = await Product.find(filter)
-      .limit(limit)
-      .skip(skip)
-      .lean()
-
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: "Product not found or invalid query"
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      data: product
-    });
-  }
-  catch (error) {
-    makeLogFile("error.log", `\n[${Date.now()}] - ${req.ip} | ${error}\n`);
-    console.error(`products by queries error: ${error}`);
-
-    return res.status(500).json({
-      success: false,
-      message: 'Internal server error'
-    });
-  }
-}
-
-export const productsByFilter = async (req: Request, res: Response) => {
-  try {
-    const {
-      productBrand,
-      productPrice,
-      productCategory,
-      productStock
-    } = req.body;
-
-    const filter: any = { isActive: true };
-
-    if (productBrand) filter.productBrand = productBrand;
-    if (productCategory) filter.productCategory = productCategory;
-
-    if (productPrice) filter.productPrice = Number(productPrice);
-    if (productStock) filter.productStock = Number(productStock);
-
-    const products = await Product.find(filter).lean();
-    if (!products) {
-      return res.status(404).json({
-        success: false,
-        message: "Product not found with this filter"
-      });
-    }
-
-    return res.status(200).json({
-      successs: true,
-      data: products
-    });
-  }
-  catch (error) {
-    makeLogFile("error.log", `[${Date.now()}] - ${req.ip} | ${error}`);
-    console.error(`products by filter error: ${error}`);
 
     return res.status(500).json({
       success: false,

@@ -1,5 +1,5 @@
 import express from 'express';
-import { addProduct, productAddImages, productById, productFeatured, productRemoveImages, products, productsByFilter, productsByQueries, productTrending, removeProductById, updateProductById } from '../controllers/product.controller';
+import { addProduct, productAddImages, productById, productBySlug, productFeatured, productRemoveImages, products, productTrending, removeProductById, updateProductById } from '../controllers/product.controller';
 import { Validate } from '../middlewares/validation.middleware';
 import { addProductSchema } from '../validators/product.validator';
 import { isAdmin } from '../middlewares/auth.middleware';
@@ -11,15 +11,13 @@ productRouter.get('/', products);
 
 productRouter.get('/:productId', productById);
 
+productRouter.get('/:slug', productBySlug)
+
 productRouter.post('/add', Validate(addProductSchema), isAdmin, addProduct);
 
 productRouter.put('/update/:productId', isAdmin, updateProductById);
 
 productRouter.delete('/remove/:productId', isAdmin, removeProductById);
-
-// productRouter.get('/search/:query', productsByQueries);
-
-// productRouter.get('/filter', productsByFilter);
 
 productRouter.post('/:productId/images', upload.array('productImages', 5), productAddImages);
 
