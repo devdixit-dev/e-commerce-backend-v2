@@ -302,9 +302,43 @@ export const removeProductById = async (req: Request, res: Response) => {
 
 export const productAddImages = async (req: Request, res: Response) => {
   try {
-    const array = req.files;
+    const id = req.params.productId;
+    if(!id) {
+      return res.status(404).json({
+        success: false,
+        message: "Product ID is not found"
+      });
+    }
 
-    console.log(array)
+    const images: any = req.files;
+    if(images?.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Product images is required"
+      });
+    }
+    
+    console.log(images);
+
+    const uploadImages: any = images?.map((file: any) => `http://localhost:3000/uploads/${file.filename}`);
+
+    const product = await Product.findByIdAndUpdate(
+      id,
+      { $push: { productImages: uploadImages } },
+      { new: true }
+    ).lean();
+
+    if(!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: product
+    });
   }
   catch (error) {
     makeLogFile("error.log", `[${Date.now()}] - ${req.ip} | ${error}`);
@@ -317,7 +351,14 @@ export const productAddImages = async (req: Request, res: Response) => {
   }
 }
 
-export const productRemoveImages = () => { }
+export const productRemoveImages = (req: Request, res: Response) => {
+  try{
+    
+  }
+  catch(error) {
+
+  }
+}
 
 export const productFeatured = () => { }
 

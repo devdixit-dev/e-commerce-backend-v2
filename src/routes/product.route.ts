@@ -19,7 +19,7 @@ productRouter.put('/update/:productId', isAdmin, updateProductById);
 
 productRouter.delete('/remove/:productId', isAdmin, removeProductById);
 
-productRouter.post('/:productId/images', upload.array('productImages', 5), productAddImages);
+productRouter.post('/:productId/images', isAdmin, upload.array('productImages', 5), productAddImages);
 
 productRouter.delete('/:productId/images/:imageId', productRemoveImages);
 
