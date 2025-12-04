@@ -96,7 +96,11 @@ const userSchema = new mongoose.Schema({
   failedLoginAttempts: {
     type: Number,
     default: 0
-  }
+  },
+  placedOrders: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Order'
+  }]
 }, { timestamps: true });
 
 const User = mongoose.model('User', userSchema);

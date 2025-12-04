@@ -1,5 +1,5 @@
 import express from 'express';
-import { addProduct, productAddImages, productById, productBySlug, productFeatured, productRemoveImages, products, productTrending, removeProductById, updateProductById } from '../controllers/product.controller';
+import { addProduct, productAddImages, productById, productBySlug, productFeatured, products, productTrending, removeProductById, updateProductById } from '../controllers/product.controller';
 import { Validate } from '../middlewares/validation.middleware';
 import { addProductSchema } from '../validators/product.validator';
 import { isAdmin } from '../middlewares/auth.middleware';
@@ -20,8 +20,6 @@ productRouter.put('/update/:productId', isAdmin, updateProductById);
 productRouter.delete('/remove/:productId', isAdmin, removeProductById);
 
 productRouter.post('/:productId/images', isAdmin, upload.array('productImages', 5), productAddImages);
-
-productRouter.delete('/:productId/images/:imageId', productRemoveImages);
 
 productRouter.post('/featured', productFeatured);
 

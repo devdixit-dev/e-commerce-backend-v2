@@ -341,7 +341,7 @@ export const productAddImages = async (req: Request, res: Response) => {
     });
   }
   catch (error) {
-    makeLogFile("error.log", `[${Date.now()}] - ${req.ip} | ${error}`);
+    makeLogFile("error.log", `\n[${Date.now()}] - ${req.ip} | ${error}\n`);
     console.error(`add images for product error: ${error}`);
 
     return res.status(500).json({
@@ -351,15 +351,34 @@ export const productAddImages = async (req: Request, res: Response) => {
   }
 }
 
-export const productRemoveImages = (req: Request, res: Response) => {
+export const productFeatured = (req: Request, res: Response) => {
   try{
-    
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
   }
   catch(error) {
+    makeLogFile("error.log", `\n[${Date.now()}] - ${req.ip} | ${error}\n`);
+    console.error(`product featured error: ${error}`);
 
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
   }
 }
 
-export const productFeatured = () => { }
+export const productTrending = (req: Request, res: Response) => {
+  try{
 
-export const productTrending = () => { }
+  }
+  catch(error) {
+    makeLogFile("error.log", `\n[${Date.now()}] - ${req.ip} | ${error}\n`);
+    console.error(`product trending error: ${error}`);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+}
