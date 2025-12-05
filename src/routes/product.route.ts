@@ -21,8 +21,8 @@ productRouter.delete('/remove/:productId', isAdmin, removeProductById);
 
 productRouter.post('/:productId/images', isAdmin, upload.array('productImages', 5), productAddImages);
 
-productRouter.post('/featured', productFeatured);
+productRouter.get('/get/featured', productFeatured);
 
-productRouter.post('/trending', productTrending);
+productRouter.get('/get/trending', productTrending);
 
 export default productRouter;
