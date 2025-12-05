@@ -351,11 +351,28 @@ export const productAddImages = async (req: Request, res: Response) => {
   }
 }
 
-export const productFeatured = (req: Request, res: Response) => {
+export const productFeatured = async (req: Request, res: Response) => {
   try{
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
+
+    const products = await Product.find({ isActive: true, featured: true })
+    .lean()
+    .limit(limit)
+    .skip(skip)
+
+    if(!products) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: products
+    });
   }
   catch(error) {
     makeLogFile("error.log", `\n[${Date.now()}] - ${req.ip} | ${error}\n`);
@@ -368,9 +385,29 @@ export const productFeatured = (req: Request, res: Response) => {
   }
 }
 
-export const productTrending = (req: Request, res: Response) => {
+export const productTrending = async (req: Request, res: Response) => {
   try{
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
 
+    const products = await Product.find({ totalSales: { $gte: 2000 } })
+    .lean()
+    .limit(limit)
+    .skip(skip)
+    .sort({ totalSales: -1 });
+
+    if(!products) {
+      return res.status(404).json({
+        success: true,
+        message: "Product not found"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: products
+    });
   }
   catch(error) {
     makeLogFile("error.log", `\n[${Date.now()}] - ${req.ip} | ${error}\n`);
