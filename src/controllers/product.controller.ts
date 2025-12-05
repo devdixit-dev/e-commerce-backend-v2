@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import { makeLogFile } from "../utils/logger";
 import RedisClient from "../config/redis.config";
 import Product from "../models/product.model";
+import cloudinary from "../config/cloudinary.config";
+import fs from 'fs';
 
 export const products = async (req: Request, res: Response) => {
   try {
@@ -317,14 +319,25 @@ export const productAddImages = async (req: Request, res: Response) => {
         message: "Product images is required"
       });
     }
-    
-    console.log(images);
 
-    const uploadImages: any = images?.map((file: any) => `http://localhost:3000/uploads/${file.filename}`);
+    const uploadImages: string[] = [];
+
+    for (const image of images) {
+      const imagePath = image.path;
+
+      const result = await cloudinary.uploader.upload(
+        imagePath, {
+          folder: "Products"
+        }
+      );
+
+      uploadImages.push(result.secure_url);
+      fs.unlinkSync(imagePath);
+    }
 
     const product = await Product.findByIdAndUpdate(
       id,
-      { $push: { productImages: uploadImages } },
+      { $push: { productImages: { $each: uploadImages } } },
       { new: true }
     ).lean();
 
@@ -394,8 +407,7 @@ export const productTrending = async (req: Request, res: Response) => {
     const products = await Product.find({ totalSales: { $gte: 2000 } })
     .lean()
     .limit(limit)
-    .skip(skip)
-    .sort({ totalSales: -1 });
+    .skip(skip);
 
     if(!products) {
       return res.status(404).json({
