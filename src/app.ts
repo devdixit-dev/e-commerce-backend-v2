@@ -7,6 +7,7 @@ import {auth} from './middlewares/auth.middleware';
 import { makeLogFile } from './utils/logger';
 import productRouter from './routes/product.route';
 import userRouter from './routes/user.route';
+import categoryRouter from './routes/category.route';
 
 const createServer = async () => {
   const app = express();
@@ -31,7 +32,8 @@ const createServer = async () => {
 
   app.use('/api/auth', authRouter);
   app.use('/api/user', auth, userRouter);
-  app.use('/api/products', productRouter)
+  app.use('/api/products', productRouter);
+  app.use('/api/categories', categoryRouter);
 
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     console.error("Unhandled error:", err);
