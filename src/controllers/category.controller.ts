@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
+import fs from 'fs';
 
 import { makeLogFile } from "../utils/logger";
 import Category from "../models/category.model";
+import cloudinary from "../config/cloudinary.config";
 
 export const categories = async (req: Request, res: Response) => {
   try{
@@ -93,8 +95,16 @@ export const addCategory = async (req: Request, res: Response) => {
       });
     }
 
+    const result = await cloudinary.uploader.upload(
+      String(image?.path), {
+        folder: "Category"
+      }
+    );
+
+    fs.unlinkSync(String(image?.path));
+
     const add = await Category.create({
-      name, image, products,
+      name, image: result.secure_url, products,
       created_by: (req as any).user.id
     });
 
