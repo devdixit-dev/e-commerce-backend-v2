@@ -82,6 +82,8 @@ export const addCategory = async (req: Request, res: Response) => {
       name, products
     } = req.body;
 
+    console.log(req.body);
+
     const image = req.file;
 
     const find = await Category.findOne({ name })
