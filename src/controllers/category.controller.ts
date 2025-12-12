@@ -76,24 +76,38 @@ export const categoryById = async (req: Request, res: Response) => {
   }
 }
 
-export const addCategory = async (req: Request, res: Response) => {
+export const addCategory = async(req: Request, res: Response) => {
   try{
     const {
       name, products
     } = req.body;
 
-    console.log(req.body);
+    const find = await Category.findOne({ name }).lean();
+    if(find) {
+      return res.status(201).json({
+        success: false,
+        message: "Category already exist"
+      });
+    }
+  }
+  catch(error) {
 
+  }
+}
+
+export const addImgeForCategory = async (req: Request, res: Response) => {
+  try{
+    const id = req.params.id;
     const image = req.file;
 
-    const find = await Category.findOne({ name })
+    const find = await Category.findById(id)
     .select('name')
     .lean();
 
-    if(find) {
+    if(!find) {
       return res.status(404).json({
         success: false,
-        message: "Category already exist !"
+        message: "Category not exist !"
       });
     }
 
@@ -105,20 +119,19 @@ export const addCategory = async (req: Request, res: Response) => {
 
     fs.unlinkSync(String(image?.path));
 
-    const add = await Category.create({
-      name, image: result.secure_url, products,
-      created_by: (req as any).user.id
-    });
+    await Category.findByIdAndUpdate(
+      id,
+      { image: result.secure_url }
+    );
 
     return res.status(201).json({
       success: true,
-      message: "Category created",
-      data: add
+      message: "Category image added"
     });
   }
   catch(error) {
-    console.error(`add categories error - ${error}`);
-    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in add categories -> ${req.ip} - Error ${error}\n`)
+    console.error(`add image categories error - ${error}`);
+    makeLogFile("error.log", `\n[${new Date().toISOString()}] Error in add images for categories -> ${req.ip} - Error ${error}\n`)
 
     return res.status(500).json({
       success: false,

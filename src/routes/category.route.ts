@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-import { addCategory, categories, categoryById } from '../controllers/category.controller';
+import { addImgeForCategory, categories, categoryById } from '../controllers/category.controller';
 import upload from '../middlewares/multer.middleware';
 import { isAdmin } from '../middlewares/auth.middleware';
 
@@ -10,6 +10,6 @@ categoryRouter.get('/', categories);
 
 categoryRouter.get('/:id', categoryById);
 
-categoryRouter.post('/', isAdmin, upload.single('image'), addCategory);
+categoryRouter.post('/add/image/:id', isAdmin, upload.single('image'), addImgeForCategory);
 
 export default categoryRouter;
